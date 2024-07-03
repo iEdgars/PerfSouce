@@ -1,6 +1,18 @@
 import pandas as pd
 from jira import JIRA
 import sqlite3
+import streamlit as st
+
+def confirm_conncetion(jira_url, username, api_key):
+    try:
+        jira = JIRA(server=jira_url, basic_auth=(username, api_key))
+        # Attempt to fetch a project to confirm connection
+        projects = jira.projects()
+        if projects:
+            return True
+    except Exception as e:
+        st.error(f"Connection failed: {e}")
+        return False
 
 def fetch_jira_issues(server_url, email, api_token, project_key):
     # Connect to JIRA instance
