@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import sqlite3
-from perfJira import fetch_jira_issues, write_df_to_db, confirm_conncetion
+from perfJira import confirm_connection
 
 # Set the page config
 st.set_page_config(
@@ -19,7 +19,7 @@ api_key = st.text_input("Jira API Key", type="password")
 jira_url = st.text_input("Jira URL")
 
 if st.button("Check Connection"):
-    if confirm_conncetion(jira_url, username, api_key):
+    if confirm_connection(jira_url, username, api_key):
         st.success("Connection successful!")
     else:
         st.error("Connection failed. Please check your credentials and URL.")
