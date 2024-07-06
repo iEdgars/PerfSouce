@@ -73,8 +73,9 @@ def fetch_jira_issue_status(the_project, jira_url, project_code, auth):
     
     # Create table if not exists
     cursor.execute('''
-    CREATE TABLE IF NOT EXISTS project_statuses (
+    CREATE TABLE IF NOT EXISTS issues_and_statuses (
         the_project TEXT,
+        jira_project TEXT,
         issue_type_id TEXT,
         issue_type TEXT,
         status_name TEXT,
@@ -101,10 +102,10 @@ def fetch_jira_issue_status(the_project, jira_url, project_code, auth):
             category_color = status['statusCategory']['colorName']
             
             cursor.execute('''
-            INSERT INTO project_statuses (
-                the_project, issue_type_id, issue_type, status_name, status_id, untranslated_name, category_id, category_key, category_name, category_color
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (the_project, issue_type_id, issue_type_name, status_name, status_id, untranslated_name, category_id, category_key, category_name, category_color))
+            INSERT INTO issues_and_statuses (
+                the_project, jira_project, issue_type_id, issue_type, status_name, status_id, untranslated_name, category_id, category_key, category_name, category_color
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (the_project, project_code, issue_type_id, issue_type_name, status_name, status_id, untranslated_name, category_id, category_key, category_name, category_color))
     
     # Commit and close connection
     conn.commit()
@@ -123,9 +124,45 @@ def fetch_jira_fields(the_project, jira_url, project_code, auth):
     conn = sqlite3.connect('jira_projects.db')
     cursor = conn.cursor()
     
+    # Create table if not exists
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS fields (
+        the_project TEXT,
+        jira_project TEXT,
+        id TEXT,
+        custom_id INTEGER,
+        key TEXT,
+        name TEXT,
+        untranslatedName TEXT,
+        is_custom TEXT,
+        is_orderable TEXT,
+        is_navigable TEXT,
+        is_searchable TEXT
+    )
+    ''')
     
+    # Insert data into table
+    for issue_type in data:
+        issue_type_id = issue_type['id']
+        issue_type_name = issue_type['name']
+        for status in issue_type['statuses']:
+            status_name = status['name']
+            status_id = status['id']
+            untranslated_name = status['untranslatedName']
+            category_id = status['statusCategory']['id']
+            category_key = status['statusCategory']['key']
+            category_name = status['statusCategory']['name']
+            category_color = status['statusCategory']['colorName']
+            
+            cursor.execute('''
+            INSERT INTO issues_and_statuses (
+                the_project, jira_project, issue_type_id, issue_type, status_name, status_id, untranslated_name, category_id, category_key, category_name, category_color
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (the_project, project_code, issue_type_id, issue_type_name, status_name, status_id, untranslated_name, category_id, category_key, category_name, category_color))
     
-    
+    # Commit and close connection
+    conn.commit()
+    conn.close()
     
     
     
