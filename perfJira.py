@@ -133,38 +133,42 @@ def fetch_jira_fields(the_project, jira_url, project_code, auth):
         custom_id INTEGER,
         key TEXT,
         name TEXT,
-        untranslatedName TEXT,
-        is_custom TEXT,
-        is_orderable TEXT,
-        is_navigable TEXT,
-        is_searchable TEXT
+        untranslated_name TEXT,
+        is_custom INTEGER,
+        is_orderable INTEGER,
+        is_navigable INTEGER,
+        is_searchable INTEGER,
+        type TEXT
     )
     ''')
     
     # Insert data into table
-    for issue_type in data:
-        issue_type_id = issue_type['id']
-        issue_type_name = issue_type['name']
-        for status in issue_type['statuses']:
-            status_name = status['name']
-            status_id = status['id']
-            untranslated_name = status['untranslatedName']
-            category_id = status['statusCategory']['id']
-            category_key = status['statusCategory']['key']
-            category_name = status['statusCategory']['name']
-            category_color = status['statusCategory']['colorName']
-            
-            cursor.execute('''
-            INSERT INTO issues_and_statuses (
-                the_project, jira_project, issue_type_id, issue_type, status_name, status_id, untranslated_name, category_id, category_key, category_name, category_color
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (the_project, project_code, issue_type_id, issue_type_name, status_name, status_id, untranslated_name, category_id, category_key, category_name, category_color))
+    for field in data:
+        id = field['id']
+        key = field['key']
+        name = field['name']
+        is_custom = field['custom']
+        is_orderable = field['orderable']
+        is_navigable = field['navigable']
+        is_searchable = field['searchable']
+        if is_custom == True:
+            untranslated_name = field['untranslatedName']
+            custom_id = field['schema']['customId']
+        else:
+            untranslated_name = ''
+            custom_id = 0
+        try:
+            field_type = field['schema']['type']
+        except KeyError:
+            field_type = ''
+
+        cursor.execute('''
+        INSERT INTO fields (
+            the_project, jira_project, id, custom_id, key, name, untranslated_name, is_custom, is_orderable, is_navigable, is_searchable, type
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (the_project, project_code, id, custom_id, key, name, untranslated_name, is_custom, is_orderable, is_navigable, is_searchable, field_type))
+
     
     # Commit and close connection
     conn.commit()
     conn.close()
-    
-    
-    
-    
-    pass
