@@ -1,0 +1,15 @@
+{
+    "server_info": "/rest/api/latest/serverInfo",
+    "projects": "/rest/api/latest/project",
+    "issue_link_type": "/rest/api/latest/issueLinkType",
+    "project_details": "/rest/api/latest/project/{projectCode}",
+    "project_statuses": "/rest/api/latest/project/{projectCode}/statuses",
+    "fields": "/rest/api/latest/field",
+    "resolutions": "/rest/api/latest/resolution",
+    "priorities": "/rest/api/latest/priority",
+    "statuses": "/rest/api/latest/status",
+    "sprints": "/rest/agile/latest/board/{board}/sprint?&maxResults=50&startAt={startAt}",
+    "issue_types": "/rest/api/latest/issuetype",
+    "search_single": "/rest/api/latest/search?jql={jql}&maxResults=1",
+    "search_changelog": "/rest/api/latest/search?expand=changelog&jql={jql}&maxResults=50&startAt={startAt}"
+}
