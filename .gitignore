@@ -158,7 +158,7 @@ cython_debug/
 creds.json
 jiraInfo.json
 jiraCreds.json
-.db
+*.db
 
 ### working files
 approachTesting.ipynb
