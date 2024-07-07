@@ -172,3 +172,145 @@ def fetch_jira_fields(the_project, jira_url, project_code, auth):
     # Commit and close connection
     conn.commit()
     conn.close()
+
+# Function to get all resolutions from Jira and store in SQLite
+def fetch_jira_resolutions(the_project, jira_url, project_code, auth):
+    # Jira API URL
+    url = f"{jira_url}/rest/api/latest/resolution"
+    
+    # Make the request to Jira API
+    response = requests.get(url, auth=auth)
+    data = response.json()
+    
+    # Connect to SQLite database (or create it)
+    conn = sqlite3.connect('jira_projects.db')
+    cursor = conn.cursor()
+    
+    # Create table if not exists
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS resolutions (
+        the_project TEXT,
+        jira_project TEXT,
+        id INTEGER,
+        name TEXT,
+        description TEXT
+    )
+    ''')
+    
+    # Insert data into table
+    for resolution in data:
+        resolution_id = resolution['id']
+        resolution_name = resolution['name']
+        resolution_description = resolution['description']
+        
+        cursor.execute('''
+        INSERT INTO resolutions (
+            the_project, jira_project, id, name, description
+        ) VALUES (?, ?, ?, ?, ?)
+        ''', (the_project, project_code, resolution_id, resolution_name, resolution_description))
+    
+    # Commit and close connection
+    conn.commit()
+    conn.close()
+
+# Function to get all priorities from Jira and store in SQLite
+def fetch_jira_priorities(the_project, jira_url, project_code, auth):
+    # Jira API URL
+    url = f"{jira_url}/rest/api/latest/priority"
+    
+    # Make the request to Jira API
+    response = requests.get(url, auth=auth)
+    data = response.json()
+    
+    # Connect to SQLite database (or create it)
+    conn = sqlite3.connect('jira_projects.db')
+    cursor = conn.cursor()
+    
+    # Create table if not exists
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS priorities (
+        the_project TEXT,
+        jira_project TEXT,
+        id INTEGER,
+        name TEXT,
+        description TEXT,
+        status_color TEXT
+    )
+    ''')
+    
+    # Insert data into table
+    for priority in data:
+        priority_id = priority['id']
+        priority_name = priority['name']
+        priority_description = priority['description']
+        status_color = priority['statusColor']
+        
+        cursor.execute('''
+        INSERT INTO priorities (
+            the_project, jira_project, id, name, description, status_color
+        ) VALUES (?, ?, ?, ?, ?, ?)
+        ''', (the_project, project_code, priority_id, priority_name, priority_description, status_color))
+    
+    # Commit and close connection
+    conn.commit()
+    conn.close()
+
+# Function to get all statuses from Jira and store in SQLite
+def fetch_jira_statuses(the_project, jira_url, project_code, auth):
+    # Jira API URL
+    url = f"{jira_url}/rest/api/latest/status"
+    
+    # Make the request to Jira API
+    response = requests.get(url, auth=auth)
+    data = response.json()
+    
+    # Connect to SQLite database (or create it)
+    conn = sqlite3.connect('jira_projects.db')
+    cursor = conn.cursor()
+    
+    # Create table if not exists
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS statuses (
+        the_project TEXT,
+        jira_project TEXT,
+        id INTEGER,
+        name TEXT,
+        description TEXT,
+        untranslated_name TEXT,
+        status_category_id INTEGER,
+        status_category_key TEXT,
+        status_category_name TEXT,
+        status_category_color TEXT,
+        scope_type TEXT,
+        project_id INTEGER
+    )
+    ''')
+    
+    # Insert data into table
+    for status in data:
+        status_id = status['id']
+        status_name = status['name']
+        status_description = status['description']
+        untranslated_name = status['untranslatedName']
+        status_category_id = status['statusCategory']['id']
+        status_category_key = status['statusCategory']['key']
+        status_category_name = status['statusCategory']['name']
+        status_category_color = status['statusCategory']['colorName']
+        
+        # Handle scope if it exists
+        if 'scope' in status:
+            scope_type = status['scope']['type']
+            project_id = status['scope']['project']['id']
+        else:
+            scope_type = ''
+            project_id = 0
+        
+        cursor.execute('''
+        INSERT INTO statuses (
+            the_project, jira_project, id, name, description, untranslated_name, status_category_id, status_category_key, status_category_name, status_category_color, scope_type, project_id
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (the_project, project_code, status_id, status_name, status_description, untranslated_name, status_category_id, status_category_key, status_category_name, status_category_color, scope_type, project_id))
+    
+    # Commit and close connection
+    conn.commit()
+    conn.close()
