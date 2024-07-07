@@ -314,3 +314,59 @@ def fetch_jira_statuses(the_project, jira_url, project_code, auth):
     # Commit and close connection
     conn.commit()
     conn.close()
+
+# Function to get all issue types from Jira and store in SQLite
+def fetch_jira_issue_types(the_project, jira_url, project_code, auth):
+    # Jira API URL
+    url = f"{jira_url}/rest/api/latest/issuetype"
+    
+    # Make the request to Jira API
+    response = requests.get(url, auth=auth)
+    data = response.json()
+    
+    # Connect to SQLite database (or create it)
+    conn = sqlite3.connect('jira_projects.db')
+    cursor = conn.cursor()
+    
+    # Create table if not exists
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS issue_types (
+        the_project TEXT,
+        jira_project TEXT,
+        id INTEGER,
+        description TEXT,
+        name TEXT,
+        untranslated_name TEXT,
+        subtask BOOLEAN,
+        hierarchy_level INTEGER,
+        scope_type TEXT,
+        project_id INTEGER
+    )
+    ''')
+    
+    # Insert data into table
+    for issue_type in data:
+        issue_type_id = issue_type['id']
+        description = issue_type['description']
+        name = issue_type['name']
+        untranslated_name = issue_type['untranslatedName']
+        subtask = issue_type['subtask']
+        hierarchy_level = issue_type['hierarchyLevel']
+        
+        # Handle scope if it exists
+        if 'scope' in issue_type:
+            scope_type = issue_type['scope']['type']
+            project_id = issue_type['scope']['project']['id']
+        else:
+            scope_type = ''
+            project_id = 0
+        
+        cursor.execute('''
+        INSERT INTO issue_types (
+            the_project, jira_project, id, description, name, untranslated_name, subtask, hierarchy_level, scope_type, project_id
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (the_project, project_code, issue_type_id, description, name, untranslated_name, subtask, hierarchy_level, scope_type, project_id))
+    
+    # Commit and close connection
+    conn.commit()
+    conn.close()
