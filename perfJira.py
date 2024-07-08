@@ -352,14 +352,11 @@ def fetch_jira_issue_types(the_project, jira_url, project_code, auth):
         untranslated_name = issue_type['untranslatedName']
         subtask = issue_type['subtask']
         hierarchy_level = issue_type['hierarchyLevel']
-        
-        # Handle scope if it exists
-        if 'scope' in issue_type:
-            scope_type = issue_type['scope']['type']
-            project_id = issue_type['scope']['project']['id']
-        else:
-            scope_type = ''
-            project_id = 0
+
+        # Handle scope using .get() method
+        scope = issue_type.get('scope', {})
+        scope_type = scope.get('type', None)
+        project_id = scope.get('project', {}).get('id', None)
         
         cursor.execute('''
         INSERT INTO issue_types (
@@ -370,59 +367,6 @@ def fetch_jira_issue_types(the_project, jira_url, project_code, auth):
     # Commit and close connection
     conn.commit()
     conn.close()
-
-# # Function to get all boards from Jira Agile and store in SQLite
-# def fetch_jira_boards(the_project, jira_url, project_code, auth):
-#     # Jira API URL
-#     url = f"{jira_url}/rest/agile/latest/board"
-    
-#     # Make the request to Jira API
-#     response = requests.get(url, auth=auth)
-#     data = response.json()
-    
-#     # Connect to SQLite database (or create it)
-#     conn = sqlite3.connect('jira_projects.db')
-#     cursor = conn.cursor()
-    
-#     # Create table if not exists
-#     cursor.execute('''
-#     CREATE TABLE IF NOT EXISTS boards (
-#         the_project TEXT,
-#         jira_project TEXT,
-#         id INTEGER,
-#         name TEXT,
-#         type TEXT,
-#         location_projectId INTEGER,
-#         location_displayName TEXT,
-#         location_projectName TEXT,
-#         location_projectKey TEXT,
-#         location_projectTypeKey TEXT,
-#         location_name TEXT
-#     )
-#     ''')
-    
-#     # Insert data into table
-#     for board in data['values']:
-#         board_id = board['id']
-#         board_name = board['name']
-#         board_type = board['type']
-#         location = board['location']
-#         location_projectId = location['projectId']
-#         location_displayName = location['displayName']
-#         location_projectName = location['projectName']
-#         location_projectKey = location['projectKey']
-#         location_projectTypeKey = location['projectTypeKey']
-#         location_name = location['name']
-        
-#         cursor.execute('''
-#         INSERT INTO boards (
-#             the_project, jira_project, id, name, type, location_projectId, location_displayName, location_projectName, location_projectKey, location_projectTypeKey, location_name
-#         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-#         ''', (the_project, project_code, board_id, board_name, board_type, location_projectId, location_displayName, location_projectName, location_projectKey, location_projectTypeKey, location_name))
-    
-#     # Commit and close connection
-#     conn.commit()
-#     conn.close()
 
 # Function to get all boards from Jira Agile and store in SQLite
 def fetch_jira_boards(the_project, jira_url, project_code, auth):
