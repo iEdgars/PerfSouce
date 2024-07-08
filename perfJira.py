@@ -371,14 +371,65 @@ def fetch_jira_issue_types(the_project, jira_url, project_code, auth):
     conn.commit()
     conn.close()
 
+# # Function to get all boards from Jira Agile and store in SQLite
+# def fetch_jira_boards(the_project, jira_url, project_code, auth):
+#     # Jira API URL
+#     url = f"{jira_url}/rest/agile/latest/board"
+    
+#     # Make the request to Jira API
+#     response = requests.get(url, auth=auth)
+#     data = response.json()
+    
+#     # Connect to SQLite database (or create it)
+#     conn = sqlite3.connect('jira_projects.db')
+#     cursor = conn.cursor()
+    
+#     # Create table if not exists
+#     cursor.execute('''
+#     CREATE TABLE IF NOT EXISTS boards (
+#         the_project TEXT,
+#         jira_project TEXT,
+#         id INTEGER,
+#         name TEXT,
+#         type TEXT,
+#         location_projectId INTEGER,
+#         location_displayName TEXT,
+#         location_projectName TEXT,
+#         location_projectKey TEXT,
+#         location_projectTypeKey TEXT,
+#         location_name TEXT
+#     )
+#     ''')
+    
+#     # Insert data into table
+#     for board in data['values']:
+#         board_id = board['id']
+#         board_name = board['name']
+#         board_type = board['type']
+#         location = board['location']
+#         location_projectId = location['projectId']
+#         location_displayName = location['displayName']
+#         location_projectName = location['projectName']
+#         location_projectKey = location['projectKey']
+#         location_projectTypeKey = location['projectTypeKey']
+#         location_name = location['name']
+        
+#         cursor.execute('''
+#         INSERT INTO boards (
+#             the_project, jira_project, id, name, type, location_projectId, location_displayName, location_projectName, location_projectKey, location_projectTypeKey, location_name
+#         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+#         ''', (the_project, project_code, board_id, board_name, board_type, location_projectId, location_displayName, location_projectName, location_projectKey, location_projectTypeKey, location_name))
+    
+#     # Commit and close connection
+#     conn.commit()
+#     conn.close()
+
 # Function to get all boards from Jira Agile and store in SQLite
 def fetch_jira_boards(the_project, jira_url, project_code, auth):
     # Jira API URL
-    url = f"{jira_url}/rest/agile/latest/board?startAt=100"
-    
-    # Make the request to Jira API
-    response = requests.get(url, auth=auth)
-    data = response.json()
+    url = f"{jira_url}/rest/agile/latest/board"
+    start_at = 0
+    is_last = False
     
     # Connect to SQLite database (or create it)
     conn = sqlite3.connect('jira_projects.db')
@@ -401,24 +452,33 @@ def fetch_jira_boards(the_project, jira_url, project_code, auth):
     )
     ''')
     
-    # Insert data into table
-    for board in data['values']:
-        board_id = board['id']
-        board_name = board['name']
-        board_type = board['type']
-        location = board['location']
-        location_projectId = location['projectId']
-        location_displayName = location['displayName']
-        location_projectName = location['projectName']
-        location_projectKey = location['projectKey']
-        location_projectTypeKey = location['projectTypeKey']
-        location_name = location['name']
+    while not is_last:
+        # Make the request to Jira API
+        response = requests.get(url, auth=auth, params={'startAt': start_at})
+        data = response.json()
         
-        cursor.execute('''
-        INSERT INTO boards (
-            the_project, jira_project, id, name, type, location_projectId, location_displayName, location_projectName, location_projectKey, location_projectTypeKey, location_name
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''', (the_project, project_code, board_id, board_name, board_type, location_projectId, location_displayName, location_projectName, location_projectKey, location_projectTypeKey, location_name))
+        # Insert data into table
+        for board in data['values']:
+            board_id = board['id']
+            board_name = board['name']
+            board_type = board['type']
+            location = board.get('location', {})
+            location_projectId = location.get('projectId', None)
+            location_displayName = location.get('displayName', None)
+            location_projectName = location.get('projectName', None)
+            location_projectKey = location.get('projectKey', None)
+            location_projectTypeKey = location.get('projectTypeKey', None)
+            location_name = location.get('name', None)
+            
+            cursor.execute('''
+            INSERT INTO boards (
+                the_project, jira_project, id, name, type, location_projectId, location_displayName, location_projectName, location_projectKey, location_projectTypeKey, location_name
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (the_project, project_code, board_id, board_name, board_type, location_projectId, location_displayName, location_projectName, location_projectKey, location_projectTypeKey, location_name))
+        
+        # Update start_at and is_last
+        start_at += data['maxResults']
+        is_last = data['isLast']
     
     # Commit and close connection
     conn.commit()
