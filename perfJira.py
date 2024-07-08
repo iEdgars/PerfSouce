@@ -151,16 +151,11 @@ def fetch_jira_fields(the_project, jira_url, project_code, auth):
         is_orderable = field['orderable']
         is_navigable = field['navigable']
         is_searchable = field['searchable']
-        if is_custom == True:
-            untranslated_name = field['untranslatedName']
-            custom_id = field['schema']['customId']
-        else:
-            untranslated_name = ''
-            custom_id = 0
-        try:
-            field_type = field['schema']['type']
-        except KeyError:
-            field_type = ''
+
+        # Use .get() to safely access keys
+        untranslated_name = field.get('untranslatedName', None)
+        custom_id = field.get('schema', {}).get('customId', None)
+        field_type = field.get('schema', {}).get('type', None)
 
         cursor.execute('''
         INSERT INTO fields (
