@@ -297,13 +297,10 @@ def fetch_jira_statuses(the_project, jira_url, project_code, auth):
         status_category_name = status['statusCategory']['name']
         status_category_color = status['statusCategory']['colorName']
         
-        # Handle scope if it exists
-        if 'scope' in status:
-            scope_type = status['scope']['type']
-            project_id = status['scope']['project']['id']
-        else:
-            scope_type = ''
-            project_id = 0
+        # Handle scope using .get() method
+        scope = status.get('scope', {})
+        scope_type = scope.get('type', None)
+        project_id = scope.get('project', {}).get('id', None)
         
         cursor.execute('''
         INSERT INTO statuses (
