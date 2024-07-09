@@ -59,10 +59,10 @@ def fetch_jira_projects(the_project, jira_url, auth):
 
 
 # Function to get all statuses for issue types from Jira and store in SQLite
-def fetch_jira_issue_status(the_project, jira_url, project_code, auth):
+def fetch_jira_project_issue_status(the_project, jira_url, project_code, auth):
     # Jira API URL
     url = f"{jira_url}/rest/api/latest/project/{project_code}/statuses"
-    
+        
     # Make the request to Jira API
     response = requests.get(url, auth=auth)
     data = response.json()
@@ -73,7 +73,7 @@ def fetch_jira_issue_status(the_project, jira_url, project_code, auth):
     
     # Create table if not exists
     cursor.execute('''
-    CREATE TABLE IF NOT EXISTS issues_and_statuses (
+    CREATE TABLE IF NOT EXISTS project_issues_and_statuses (
         the_project TEXT,
         jira_project TEXT,
         issue_type_id TEXT,
@@ -102,7 +102,7 @@ def fetch_jira_issue_status(the_project, jira_url, project_code, auth):
             category_color = status['statusCategory']['colorName']
             
             cursor.execute('''
-            INSERT INTO issues_and_statuses (
+            INSERT INTO project_issues_and_statuses (
                 the_project, jira_project, issue_type_id, issue_type, status_name, status_id, untranslated_name, category_id, category_key, category_name, category_color
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (the_project, project_code, issue_type_id, issue_type_name, status_name, status_id, untranslated_name, category_id, category_key, category_name, category_color))
