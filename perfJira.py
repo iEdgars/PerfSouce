@@ -419,3 +419,114 @@ def fetch_jira_boards(the_project, jira_url, project_code, auth):
     # Commit and close connection
     conn.commit()
     conn.close()
+
+# # Function to get and store sprint info from Jira Agile
+# def fetch_jira_sprints(the_project, jira_url, project_code, board_id, auth):
+#     # Jira API URL
+#     url = f"{jira_url}/rest/agile/latest/board/{board_id}/sprint"
+    
+#     # Make the request to Jira API
+#     response = requests.get(url, auth=auth)
+#     data = response.json()
+    
+#     # Connect to SQLite database (or create it)
+#     conn = sqlite3.connect('jira_projects.db')
+#     cursor = conn.cursor()
+    
+#     # Create table if not exists
+#     cursor.execute('''
+#     CREATE TABLE IF NOT EXISTS sprints (
+#         the_project TEXT,
+#         jira_project TEXT,
+#         board_id INTEGER,
+#         id INTEGER,
+#         state TEXT,
+#         name TEXT,
+#         start_date TEXT,
+#         end_date TEXT,
+#         complete_date TEXT,
+#         origin_board_id INTEGER,
+#         goal TEXT
+#     )
+#     ''')
+    
+#     # Insert data into table
+#     for sprint in data['values']:
+#         sprint_id = sprint['id']
+#         state = sprint['state']
+#         name = sprint['name']
+#         start_date = sprint['startDate']
+#         end_date = sprint['endDate']
+#         complete_date = sprint['completeDate']
+#         origin_board_id = sprint['originBoardId']
+#         goal = sprint['goal']
+        
+#         cursor.execute('''
+#         INSERT INTO sprints (
+#             the_project, jira_project, board_id, id, state, name, start_date, end_date, complete_date, origin_board_id, goal
+#         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+#         ''', (the_project, project_code, board_id, sprint_id, state, name, start_date, end_date, complete_date, origin_board_id, goal))
+    
+#     # Commit and close connection
+#     conn.commit()
+#     conn.close()
+
+# Function to get and store sprint info from Jira Agile
+def fetch_jira_sprints(the_project, jira_url, project_code, board_id, auth):
+    start_at = 0
+    max_results = 50
+    is_last = False
+    
+    # Connect to SQLite database (or create it)
+    conn = sqlite3.connect('jira_projects.db')
+    cursor = conn.cursor()
+    
+    # Create table if not exists
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS sprints (
+        the_project TEXT,
+        jira_project TEXT,
+        board_id INTEGER,
+        id INTEGER,
+        state TEXT,
+        name TEXT,
+        start_date TEXT,
+        end_date TEXT,
+        complete_date TEXT,
+        origin_board_id INTEGER,
+        goal TEXT
+    )
+    ''')
+    
+    while not is_last:
+        # Jira API URL
+        url = f"{jira_url}/rest/agile/latest/board/{board_id}/sprint?startAt={start_at}&maxResults={max_results}"
+        
+        # Make the request to Jira API
+        response = requests.get(url, auth=auth)
+        data = response.json()
+        
+        # Insert data into table
+        for sprint in data['values']:
+            sprint_id = sprint['id']
+            state = sprint['state']
+            name = sprint['name']
+            start_date = sprint.get('startDate', '')
+            end_date = sprint.get('endDate', '')
+            complete_date = sprint.get('completeDate', '')
+            origin_board_id = sprint['originBoardId']
+            goal = sprint.get('goal', '')
+            
+            cursor.execute('''
+            INSERT INTO sprints (
+                the_project, jira_project, board_id, id, state, name, start_date, end_date, complete_date, origin_board_id, goal
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (the_project, project_code, board_id, sprint_id, state, name, start_date, end_date, complete_date, origin_board_id, goal))
+        
+        # Update pagination variables
+        start_at += max_results
+        is_last = data['isLast']
+    
+    # Commit and close connection
+    conn.commit()
+    conn.close()
