@@ -530,3 +530,96 @@ def fetch_jira_sprints(the_project, jira_url, project_code, board_id, auth):
     # Commit and close connection
     conn.commit()
     conn.close()
+
+# Function to get and store issues and changelog from Jira
+def fetch_jira_issues(the_project, jira_url, project_code, auth, board_id=None):
+    start_at = 0
+    max_results = 100
+
+    # Connect to SQLite database (or create it)
+    conn = sqlite3.connect('jira_projects.db')
+    cursor = conn.cursor()
+    
+    # Create tables if not exists
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS issues (
+        the_project TEXT,
+        jira_project TEXT,
+        issue_id TEXT,
+        key TEXT,
+        field TEXT,
+        field_value TEXT
+    )
+    ''')
+    
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS issue_changelog (
+        the_project TEXT,
+        jira_project TEXT,
+        issue_id TEXT,
+        key TEXT,
+        change_date_time TEXT,
+        field TEXT,
+        field_type TEXT,
+        field_id TEXT,
+        value_from TEXT,
+        value_to TEXT
+    )
+    ''')
+
+    while True:
+        if board_id:
+            url = f'{jira_url}/rest/agile/latest/board/{board_id}/issue?expand=changelog&maxResults={max_results}&startAt={start_at}'
+        elif project_code:
+            jql_query = f'project = {project_code}'
+            url = f'{jira_url}/rest/api/latest/search?jql={jql_query}&expand=changelog&maxResults={max_results}&startAt={start_at}'
+        else:
+            raise ValueError("Either board_id or project_code must be provided")
+
+        response = requests.get(url, auth=auth)
+        response.raise_for_status()
+        
+        issues = response.json()['issues']
+        
+        for issue in issues:
+            issue_id = issue['id']
+            key = issue['key']
+            
+            # Store latest fields
+            for field, value in issue['fields'].items():
+                if field == 'comment':
+                    field_value = 'True' if value['total'] > 0 else 'False'
+                    field = 'Commented'
+                else:
+                    field_value = json.dumps(value) if isinstance(value, (list, dict)) else str(value)
+                
+                cursor.execute('''
+                INSERT INTO issues (
+                    the_project, jira_project, issue_id, key, field, field_value
+                ) VALUES (?, ?, ?, ?, ?, ?)
+                ''', (the_project, project_code, issue_id, key, field, field_value))
+            
+            # Store changelog
+            for history in issue['changelog']['histories']:
+                change_date_time = history['created']
+                for item in history['items']:
+                    field = item['field']
+                    field_type = item['fieldtype']
+                    field_id = item.get('fieldId', '')
+                    value_from = item.get('fromString', '')
+                    value_to = item.get('toString', '')
+                    
+                    cursor.execute('''
+                    INSERT INTO issue_changelog (
+                        the_project, jira_project, issue_id, key, change_date_time, field, field_type, field_id, value_from, value_to
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ''', (the_project, project_code, issue_id, key, change_date_time, field, field_type, field_id, value_from, value_to))
+        
+        if len(issues) < max_results:
+            break
+        
+        start_at += max_results
+    
+    # Commit and close connection
+    conn.commit()
+    conn.close()
