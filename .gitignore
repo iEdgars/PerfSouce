@@ -159,6 +159,7 @@ creds.json
 jiraInfo.json
 jiraCreds.json
 *.db
+*.db-journal
 
 ### working files
 approachTesting.ipynb
