@@ -47,6 +47,23 @@ if selected_project_option:
     selected_project_key = selected_project['key']
     selected_project_name = selected_project['name']
     
-    
+    # Fetch all boards for the selected project
+    start_at = 0
+    max_results = 50
+    boards = []
+    while True:
+        response = requests.get(f"{jira_url}/rest/agile/latest/board", auth=auth, params={'startAt': start_at, 'maxResults': max_results}).json()
+        boards.extend(response['values'])
+        if response['isLast']:
+            break
+        start_at += max_results
+
+    board_options = {f"{board['id']}: {board['name']}": board for board in boards if board.get('location', {}).get('projectKey') == selected_project_key}
+    selected_board_option = st.selectbox("Select a Board", [""] + list(board_options.keys()), index=0)
+
+    if selected_board_option:
+        selected_board = board_options[selected_board_option]
+        selected_board_id = selected_board['id']
+        selected_board_name = selected_board['name']
 
 
