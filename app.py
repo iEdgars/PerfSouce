@@ -66,4 +66,3 @@ if selected_project_option:
         selected_board_id = selected_board['id']
         selected_board_name = selected_board['name']
 
-
