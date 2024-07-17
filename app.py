@@ -20,7 +20,12 @@ if 'auth' not in st.session_state:
 if 'info' not in st.session_state:
     st.session_state.info = None
 
-# st.write(st.session_state)
+#❗ Sidebar for some debug data❗
+debugbar = st.sidebar
+with debugbar:
+    st.write('session_state:')
+    st.write(st.session_state)
+
 
 st.title("Project Performance Dashboard")
 
@@ -69,6 +74,10 @@ if st.session_state.auth is not None:
 
     if selected_project_option:
         selected_project = project_options[selected_project_option]
+#❗ Sidebar for some debug data❗        
+        with debugbar:
+            st.write("---")
+            st.write(f'Selected Project: {selected_project}')
         selected_project_id = selected_project['id']
         selected_project_key = selected_project['key']
         selected_project_name = selected_project['name']
@@ -82,6 +91,10 @@ if st.session_state.auth is not None:
         selected_board_option = st.selectbox("Select a Board", [""] + list(board_options.keys()), index=0, help=st_help.selected_board_option_help)
 
         if selected_board_option:
+#❗ Sidebar for some debug data❗
+            with debugbar:
+                st.write("---")
+                st.write(f'Selected board: {selected_board_option}')
             if selected_board_option == "Use whole Project":
                 selected_board_id = None
                 selected_board_name = "Use whole Project"
@@ -89,4 +102,8 @@ if st.session_state.auth is not None:
                 selected_board = board_options[selected_board_option]
                 selected_board_id = selected_board['id']
                 selected_board_name = selected_board['name']
+#❗ Sidebar for some debug data❗
+                with debugbar:
+                    st.write("---")
+                    st.write(f'Selected board detailed: {selected_board_id}, {selected_board_name}')
 
