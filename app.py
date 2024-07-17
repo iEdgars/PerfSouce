@@ -19,6 +19,10 @@ if 'auth' not in st.session_state:
     st.session_state.auth = None
 if 'info' not in st.session_state:
     st.session_state.info = None
+if 'project' not in st.session_state:
+    st.session_state.project = None
+if 'board' not in st.session_state:
+    st.session_state.board = None
 
 #❗ Sidebar for some debug data❗
 debugbar = st.sidebar
@@ -59,7 +63,8 @@ mock_boards = [
     {"id": "123", "name": "DMT ADOM Board (Mock data)", "location": {"projectKey": "ADOM"}}
 ]
 
-if st.session_state.auth is not None:
+# Selecting Project and Board
+if st.session_state.auth is not None and st.session_state.board is None:
     # auth for data retrieval. As well verification of data beilg available.
     auth = st.session_state.auth
     project, jira_url = st.session_state.info
@@ -81,6 +86,8 @@ if st.session_state.auth is not None:
         selected_project_id = selected_project['id']
         selected_project_key = selected_project['key']
         selected_project_name = selected_project['name']
+
+        st.session_state.project = (selected_project_id, selected_project_key, selected_project_name)
        
         # Fetch all Boards for the selected project
         boards = perfJira.fetch_jira_boards(jira_url, auth)
@@ -102,8 +109,15 @@ if st.session_state.auth is not None:
                 selected_board = board_options[selected_board_option]
                 selected_board_id = selected_board['id']
                 selected_board_name = selected_board['name']
+            
+            st.session_state.board = (selected_board_id, selected_board_name)
+
 #❗ Sidebar for some debug data❗
-                with debugbar:
-                    st.write("---")
-                    st.write(f'Selected board detailed: {selected_board_id}, {selected_board_name}')
+            with debugbar:
+                st.write("---")
+                st.write(f'Selected board detailed: {selected_board_id}, {selected_board_name}')
+
+if st.session_state.board is not None:
+
+    st.write(f"Retrieving data for {st.session_state.project[1]}: {st.session_state.project[2]}, {st.session_state.board[1]}")
 
