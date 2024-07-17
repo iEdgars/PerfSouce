@@ -3,6 +3,8 @@ import sqlite3
 import json
 import streamlit as st
 
+cacheTime = 900 # time to keep cache in seconds
+
 def confirm_connection(jira_url, username, api_key):
     try:
         # Construct the API endpoint for fetching projects
@@ -21,42 +23,26 @@ def confirm_connection(jira_url, username, api_key):
         st.error(f"Connection failed: {e}")
         return False
     
-# Function to get all projects from Jira and store in SQLite
-def fetch_jira_projects(the_project, jira_url, auth):
-    # Fetch projects from Jira
-    response = requests.get(f"{jira_url}/rest/api/latest/project", auth=auth)
-    projects = response.json()
+# Function to get all Projects from Jira provide for selection
+@st.cache_data(ttl=cacheTime)
+def fetch_jira_projects(jira_url, auth):
+    data = requests.get(f"{jira_url}/rest/api/latest/project", auth=auth).json()
+    return data
 
-    # Connect to SQLite database (or create it)
-    conn = sqlite3.connect('jira_projects.db')
-    cursor = conn.cursor()
+# Function to get all boards from Jira Agile and store in SQLite
+@st.cache_data(ttl=cacheTime)
+def fetch_jira_boards(jira_url, auth):
+    start_at = 0
+    max_results = 50
+    boards = []
+    while True:
+        response = requests.get(f"{jira_url}/rest/agile/latest/board", auth=auth, params={'startAt': start_at, 'maxResults': max_results}).json()
+        boards.extend(response['values'])
+        if response['isLast']:
+            break
+        start_at += max_results
 
-    # Create table if not exists
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS jira_projects (
-            the_project TEXT,
-            project_url TEXT,
-            id TEXT,
-            key TEXT,
-            name TEXT,
-            projectTypeKey TEXT,
-            simplified BOOLEAN,
-            style TEXT,
-            isPrivate BOOLEAN
-        )
-    ''')
-
-    # Insert data into table
-    for project in projects:
-        cursor.execute('''
-            INSERT INTO jira_projects (the_project, project_url, id, key, name, projectTypeKey, simplified, style, isPrivate)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''', (the_project, project['self'], project['id'], project['key'], project['name'], project['projectTypeKey'], project['simplified'], project['style'], project['isPrivate']))
-
-    # Commit and close connection
-    conn.commit()
-    conn.close()
-
+    return boards
 
 # Function to get all statuses for issue types from Jira and store in SQLite
 def fetch_jira_project_issue_status(the_project, jira_url, project_code, auth):
@@ -359,117 +345,6 @@ def fetch_jira_issue_types(the_project, jira_url, project_code, auth):
     # Commit and close connection
     conn.commit()
     conn.close()
-
-# Function to get all boards from Jira Agile and store in SQLite
-def fetch_jira_boards(the_project, jira_url, project_code, auth):
-    # Jira API URL
-    url = f"{jira_url}/rest/agile/latest/board"
-    start_at = 0
-    is_last = False
-    
-    # Connect to SQLite database (or create it)
-    conn = sqlite3.connect('jira_projects.db')
-    cursor = conn.cursor()
-    
-    # Create table if not exists
-    cursor.execute('''
-    CREATE TABLE IF NOT EXISTS boards (
-        the_project TEXT,
-        jira_project TEXT,
-        id INTEGER,
-        name TEXT,
-        type TEXT,
-        location_projectId INTEGER,
-        location_displayName TEXT,
-        location_projectName TEXT,
-        location_projectKey TEXT,
-        location_projectTypeKey TEXT,
-        location_name TEXT
-    )
-    ''')
-    
-    while not is_last:
-        # Make the request to Jira API
-        response = requests.get(url, auth=auth, params={'startAt': start_at})
-        data = response.json()
-        
-        # Insert data into table
-        for board in data['values']:
-            board_id = board['id']
-            board_name = board['name']
-            board_type = board['type']
-            location = board.get('location', {})
-            location_projectId = location.get('projectId', None)
-            location_displayName = location.get('displayName', None)
-            location_projectName = location.get('projectName', None)
-            location_projectKey = location.get('projectKey', None)
-            location_projectTypeKey = location.get('projectTypeKey', None)
-            location_name = location.get('name', None)
-            
-            cursor.execute('''
-            INSERT INTO boards (
-                the_project, jira_project, id, name, type, location_projectId, location_displayName, location_projectName, location_projectKey, location_projectTypeKey, location_name
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (the_project, project_code, board_id, board_name, board_type, location_projectId, location_displayName, location_projectName, location_projectKey, location_projectTypeKey, location_name))
-        
-        # Update start_at and is_last
-        start_at += data['maxResults']
-        is_last = data['isLast']
-    
-    # Commit and close connection
-    conn.commit()
-    conn.close()
-
-# # Function to get and store sprint info from Jira Agile
-# def fetch_jira_sprints(the_project, jira_url, project_code, board_id, auth):
-#     # Jira API URL
-#     url = f"{jira_url}/rest/agile/latest/board/{board_id}/sprint"
-    
-#     # Make the request to Jira API
-#     response = requests.get(url, auth=auth)
-#     data = response.json()
-    
-#     # Connect to SQLite database (or create it)
-#     conn = sqlite3.connect('jira_projects.db')
-#     cursor = conn.cursor()
-    
-#     # Create table if not exists
-#     cursor.execute('''
-#     CREATE TABLE IF NOT EXISTS sprints (
-#         the_project TEXT,
-#         jira_project TEXT,
-#         board_id INTEGER,
-#         id INTEGER,
-#         state TEXT,
-#         name TEXT,
-#         start_date TEXT,
-#         end_date TEXT,
-#         complete_date TEXT,
-#         origin_board_id INTEGER,
-#         goal TEXT
-#     )
-#     ''')
-    
-#     # Insert data into table
-#     for sprint in data['values']:
-#         sprint_id = sprint['id']
-#         state = sprint['state']
-#         name = sprint['name']
-#         start_date = sprint['startDate']
-#         end_date = sprint['endDate']
-#         complete_date = sprint['completeDate']
-#         origin_board_id = sprint['originBoardId']
-#         goal = sprint['goal']
-        
-#         cursor.execute('''
-#         INSERT INTO sprints (
-#             the_project, jira_project, board_id, id, state, name, start_date, end_date, complete_date, origin_board_id, goal
-#         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-#         ''', (the_project, project_code, board_id, sprint_id, state, name, start_date, end_date, complete_date, origin_board_id, goal))
-    
-#     # Commit and close connection
-#     conn.commit()
-#     conn.close()
 
 # Function to get and store sprint info from Jira Agile
 def fetch_jira_sprints(the_project, jira_url, project_code, board_id, auth):

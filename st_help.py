@@ -35,5 +35,5 @@ Select Jira board to collect metrics for.\n
 Selections are based by Board ID and Board name.\n 
 e.g. 123: DMT Scrum Board\n 
 \n 
-To collect metrics for entire Project, select "Whole Project"
+To collect metrics for entire Project, select "Use whole Project"
 '''
