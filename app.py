@@ -23,13 +23,14 @@ if 'project' not in st.session_state:
     st.session_state.project = None
 if 'board' not in st.session_state:
     st.session_state.board = None
+if 'jira_data_bacth' not in st.session_state:
+    st.session_state.jira_data_bacth = None
 
 #❗ Sidebar for some debug data❗
 debugbar = st.sidebar
 with debugbar:
     st.write('session_state:')
     st.write(st.session_state)
-
 
 st.title("Project Performance Dashboard")
 
@@ -119,5 +120,36 @@ if st.session_state.auth is not None and st.session_state.board is None:
 
 if st.session_state.board is not None:
 
-    st.write(f"Retrieving data for {st.session_state.project[1]}: {st.session_state.project[2]}, {st.session_state.board[1]}")
+    auth = st.session_state.auth
+    project, jira_url = st.session_state.info
+    project_id, project_key, project_name = st.session_state.project
+    board_id, board_name = st.session_state.board
+    st.write(f"Retrieving data for {project_key}: {project_name}, {board_name}")
+
+    if st.session_state.jira_data_bacth is None:
+        jira_data_bacth_bar = st.progress(0, text='Retrieving initial Jira data')
+        
+        steps = [
+            ("Project issue statuses", perfJira.fetch_jira_project_issue_status),
+            ("fields", perfJira.fetch_jira_fields),
+            ("resolutions", perfJira.fetch_jira_resolutions),
+            ("priorities", perfJira.fetch_jira_priorities),
+            ("statuses", perfJira.fetch_jira_statuses),
+            ("issue types", perfJira.fetch_jira_issue_types)
+        ]
+        
+        for i, (desc, func) in enumerate(steps, start=1):
+            func(project, jira_url, project_key, auth)
+            jira_data_bacth_bar.progress(int((i / len(steps)) * 100), text=f'Retrieving initial Jira data: {desc}')
+        
+        jira_data_bacth_bar.progress(100, text='Done!')
+        st.session_state.jira_data_bacth = 'Completed'
+    else:
+        st.write('Initial data load done')
+
+st.button('OK')
+
+
+
+    
 
