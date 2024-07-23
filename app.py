@@ -25,6 +25,10 @@ if 'board' not in st.session_state:
     st.session_state.board = None
 if 'jira_data_bacth' not in st.session_state:
     st.session_state.jira_data_bacth = None
+if 'jira_data_bacth2' not in st.session_state:
+    st.session_state.jira_data_bacth2 = None
+if 'jira_field_mapping' not in st.session_state:
+    st.session_state.jira_field_mapping = None
 
 #❗ Sidebar for some debug data❗
 debugbar = st.sidebar
@@ -144,12 +148,166 @@ if st.session_state.board is not None:
         
         jira_data_bacth_bar.progress(100, text='Done!')
         st.session_state.jira_data_bacth = 'Completed'
-    else:
-        st.write('Initial data load done')
+
+if st.session_state.jira_data_bacth == 'Completed' and st.session_state.jira_field_mapping != 'Completed':
+
+    auth = st.session_state.auth
+    project, jira_url = st.session_state.info
+    project_id, project_key, project_name = st.session_state.project
+    board_id, board_name = st.session_state.board
+
+    st.write('''
+At this step please match attributes required for metrics calculation to appropriate fields in Jira. 
+Either a default field or a custom field can be selected. If an attribute is left blank – commonly used field will be taken as a match for the attribute.\n 
+Fields mapping impacts all metric calculations by Jira data in a project (e.g. velocity metrics, quality metrics, Burn Up, etc.).
+''')
+
+    # Function to fetch data from SQLite
+    def fetch_jira_fields_from_db():
+        conn = sqlite3.connect('jira_projects.db')
+        query = "SELECT name, key FROM fields"
+        df = pd.read_sql_query(query, conn)
+        conn.close()
+        return df
+
+    # Function to save selections to SQLite
+    def save_selections_to_db(selections):
+        conn = sqlite3.connect('jira_projects.db')
+        cursor = conn.cursor()
+        
+        # Create table if not exists
+        cursor.execute('''
+        CREATE TABLE IF NOT EXISTS field_selections (
+            metric_attribute TEXT PRIMARY KEY,
+            field_name TEXT,
+            field_id TEXT,
+            masked INTEGER
+        )
+        ''')
+        
+        # Insert or update data into table
+        for attribute, selection in selections.items():
+            cursor.execute('''
+            INSERT INTO field_selections (metric_attribute, field_name, field_id, masked)
+            VALUES (?, ?, ?, ?)
+            ON CONFLICT(metric_attribute) DO UPDATE SET
+            field_name=excluded.field_name,
+            field_id=excluded.field_id,
+            masked=excluded.masked
+            ''', (attribute, selection['field_name'], selection['field_id'], selection['masked']))
+        
+        # Commit and close connection
+        conn.commit()
+        conn.close()
+
+    # Fetch the data
+    fields_df = fetch_jira_fields_from_db()
+
+    # Create a dictionary for name to key and key to name mapping
+    name_to_key = dict(zip(fields_df['name'], fields_df['key']))
+    key_to_name = dict(zip(fields_df['key'], fields_df['name']))
+
+    # Metric attributes
+    metric_attributes = [
+        "Estimation in Story Points", 
+        "Estimation in Original Hours", 
+        "Sprint", 
+        "Epic", 
+        "Affected release", 
+        "Fixed release", 
+        "Severity", 
+        "Priority"
+    ]
+
+    # Initialize session state for each attribute if not already done
+    for attribute in metric_attributes:
+        if f"{attribute}_name" not in st.session_state:
+            st.session_state[f"{attribute}_name"] = "Please select value"
+        if f"{attribute}_id" not in st.session_state:
+            st.session_state[f"{attribute}_id"] = "Please select value"
+        if f"{attribute}_masked" not in st.session_state:
+            st.session_state[f"{attribute}_masked"] = False
+
+    # Callback functions to update session state
+    def update_name(attribute):
+        field_id = st.session_state[f"{attribute}_id"]
+        if field_id in key_to_name:
+            st.session_state[f"{attribute}_name"] = key_to_name[field_id]
+
+    def update_id(attribute):
+        field_name = st.session_state[f"{attribute}_name"]
+        if field_name in name_to_key:
+            st.session_state[f"{attribute}_id"] = name_to_key[field_name]
+
+    # Create the form
+    with st.container():
+        selections = {}
+        for attribute in metric_attributes:
+            col1, col2, col3, col4 = st.columns([2, 3, 3, 1])
+            
+            with col1:
+                st.markdown(f"**{attribute}**")
+            
+            with col2:
+                st.selectbox(
+                    f"Issue Field Name for {attribute}", 
+                    ["Please select value"] + list(fields_df['name']), 
+                    key=f"{attribute}_name",
+                    on_change=update_id,
+                    args=(attribute,)
+                )
+            
+            with col3:
+                st.selectbox(
+                    f"Issue Field ID for {attribute}", 
+                    ["Please select value"] + list(fields_df['key']), 
+                    key=f"{attribute}_id",
+                    on_change=update_name,
+                    args=(attribute,)
+                )
+            
+            with col4:
+                st.checkbox("Masked", key=f"{attribute}_masked")
+            
+            selections[attribute] = {
+                'field_name': st.session_state[f"{attribute}_name"],
+                'field_id': st.session_state[f"{attribute}_id"],
+                'masked': int(st.session_state[f"{attribute}_masked"])
+            }
+            
+            st.divider()
+
+        # Save selections to SQLite
+        save_selections_to_db(selections)
+
+        if st.button("Confirm"):
+            st.session_state.jira_field_mapping = 'Completed'
+
+if st.session_state.jira_field_mapping == 'Completed':
+    auth = st.session_state.auth
+    project, jira_url = st.session_state.info
+    project_id, project_key, project_name = st.session_state.project
+    board_id, board_name = st.session_state.board
+    
+    if st.session_state.jira_data_bacth2 is None:
+        jira_data_bacth_bar = st.progress(0, text='Retrieving Sprint and Issue Jira data')
+        
+        # steps = [
+        #     ("Sprints", perfJira.fetch_jira_sprints),
+        #     ("Issue history", perfJira.fetch_jira_issues)
+        # ]
+        
+        # for i, (desc, func) in enumerate(steps, start=1):
+        #     func(project, jira_url, project_key, auth)
+        #     jira_data_bacth_bar.progress(int((i / len(steps)) * 100), text=f'Retrieving Sprint and Issue Jira data: {desc}')
+
+        jira_data_bacth_bar = st.progress(10, text='Retrieving Sprint data')
+        perfJira.fetch_jira_sprints(project, jira_url, project_key, board_id, auth)
+
+        jira_data_bacth_bar.progress(80, text='Retrieving Issue history')
+        perfJira.fetch_jira_issues(project, jira_url, project_key, auth, board_id)
+        
+        jira_data_bacth_bar.progress(100, text='Done!')
+        st.session_state.jira_data_bacth2 = 'Completed'
 
 st.button('OK')
-
-
-
-    
-

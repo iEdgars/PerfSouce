@@ -37,3 +37,11 @@ e.g. 123: DMT Scrum Board\n
 \n 
 To collect metrics for entire Project, select "Use whole Project"
 '''
+
+estimation_in_SP_help = '''
+The value is used for calculating metrics in story points such as Burn Up in story points, Committed vs Completed & Commitment Rate, etc.
+'''
+
+estimation_in_OrgH_help = '''
+The value is used for calculating metrics in original hours such as Burn Up in hours, Committed vs Completed & Commitment Rate, etc.
+'''
