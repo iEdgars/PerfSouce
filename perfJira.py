@@ -423,7 +423,8 @@ def fetch_jira_issues(the_project, jira_url, project_code, auth, board_id=None):
         issue_id TEXT,
         key TEXT,
         field TEXT,
-        field_value TEXT
+        field_value TEXT,
+        issue_type_name TEXT
     )
     ''')
     
@@ -438,7 +439,8 @@ def fetch_jira_issues(the_project, jira_url, project_code, auth, board_id=None):
         field_type TEXT,
         field_id TEXT,
         value_from TEXT,
-        value_to TEXT
+        value_to TEXT,
+        issue_type_name TEXT
     )
     ''')
 
@@ -459,6 +461,7 @@ def fetch_jira_issues(the_project, jira_url, project_code, auth, board_id=None):
         for issue in issues:
             issue_id = issue['id']
             key = issue['key']
+            issue_type_name = issue['fields']['issuetype']['name']
             
             # Store latest fields
             for field, value in issue['fields'].items():
@@ -470,9 +473,9 @@ def fetch_jira_issues(the_project, jira_url, project_code, auth, board_id=None):
                 
                 cursor.execute('''
                 INSERT INTO issues (
-                    the_project, jira_project, issue_id, key, field, field_value
-                ) VALUES (?, ?, ?, ?, ?, ?)
-                ''', (the_project, project_code, issue_id, key, field, field_value))
+                    the_project, jira_project, issue_id, key, field, field_value, issue_type_name
+                ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                ''', (the_project, project_code, issue_id, key, field, field_value, issue_type_name))
             
             # Store changelog
             for history in issue['changelog']['histories']:
@@ -486,9 +489,9 @@ def fetch_jira_issues(the_project, jira_url, project_code, auth, board_id=None):
                     
                     cursor.execute('''
                     INSERT INTO issue_changelog (
-                        the_project, jira_project, issue_id, key, change_date_time, field, field_type, field_id, value_from, value_to
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    ''', (the_project, project_code, issue_id, key, change_date_time, field, field_type, field_id, value_from, value_to))
+                        the_project, jira_project, issue_id, key, change_date_time, field, field_type, field_id, value_from, value_to, issue_type_name
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ''', (the_project, project_code, issue_id, key, change_date_time, field, field_type, field_id, value_from, value_to, issue_type_name))
         
         if len(issues) < max_results:
             break
