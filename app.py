@@ -76,10 +76,6 @@ if st.session_state.auth is not None and st.session_state.board is None:
 
     if selected_project_option:
         selected_project = project_options[selected_project_option]
-#❗ Sidebar for some debug data❗        
-        with debugbar:
-            st.write("---")
-            st.write(f'Selected Project: {selected_project}')
         selected_project_id = selected_project['id']
         selected_project_key = selected_project['key']
         selected_project_name = selected_project['name']
@@ -92,21 +88,11 @@ if st.session_state.auth is not None and st.session_state.board is None:
         selected_board_option = "Use whole Project"
 
         if selected_board_option:
-#❗ Sidebar for some debug data❗
-            with debugbar:
-                st.write("---")
-                st.write(f'Selected board: {selected_board_option}')
-
             if selected_board_option == "Use whole Project":
                 selected_board_id = None
                 selected_board_name = "Use whole Project"
             
             st.session_state.board = (selected_board_id, selected_board_name, board_ids)
-
-#❗ Sidebar for some debug data❗
-            with debugbar:
-                st.write("---")
-                st.write(f'Selected board detailed: {selected_board_id}, {selected_board_name}')
 
 if st.session_state.board is not None:
 

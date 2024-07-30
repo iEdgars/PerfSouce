@@ -428,7 +428,10 @@ def fetch_jira_issues(the_project, jira_url, project_code, auth, board_id=None):
         key TEXT,
         field TEXT,
         field_value TEXT,
-        issue_type_name TEXT
+        issue_type_name TEXT,
+        issue_status TEXT,
+        issue_status_cat_key TEXT,
+        issue_status_cat_name TEXT
     )
     ''')
     
@@ -444,7 +447,10 @@ def fetch_jira_issues(the_project, jira_url, project_code, auth, board_id=None):
         field_id TEXT,
         value_from TEXT,
         value_to TEXT,
-        issue_type_name TEXT
+        issue_type_name TEXT,
+        issue_status TEXT,
+        issue_status_cat_key TEXT,
+        issue_status_cat_name TEXT
     )
     ''')
 
@@ -466,6 +472,9 @@ def fetch_jira_issues(the_project, jira_url, project_code, auth, board_id=None):
             issue_id = issue['id']
             key = issue['key']
             issue_type_name = issue['fields']['issuetype']['name']
+            issue_status = issue['fields']['status']['name']
+            issue_status_cat_key = issue['fields']['status']['statusCategory']['key']
+            issue_status_cat_name = issue['fields']['status']['statusCategory']['name']
             
             # Store latest fields
             for field, value in issue['fields'].items():
@@ -477,9 +486,9 @@ def fetch_jira_issues(the_project, jira_url, project_code, auth, board_id=None):
                 
                 cursor.execute('''
                 INSERT INTO issues (
-                    the_project, jira_project, issue_id, key, field, field_value, issue_type_name
-                ) VALUES (?, ?, ?, ?, ?, ?, ?)
-                ''', (the_project, project_code, issue_id, key, field, field_value, issue_type_name))
+                    the_project, jira_project, issue_id, key, field, field_value, issue_type_name, issue_status, issue_status_cat_key, issue_status_cat_name
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ''', (the_project, project_code, issue_id, key, field, field_value, issue_type_name, issue_status, issue_status_cat_key, issue_status_cat_name))
             
             # Store changelog
             for history in issue['changelog']['histories']:
@@ -493,9 +502,9 @@ def fetch_jira_issues(the_project, jira_url, project_code, auth, board_id=None):
                     
                     cursor.execute('''
                     INSERT INTO issue_changelog (
-                        the_project, jira_project, issue_id, key, change_date_time, field, field_type, field_id, value_from, value_to, issue_type_name
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    ''', (the_project, project_code, issue_id, key, change_date_time, field, field_type, field_id, value_from, value_to, issue_type_name))
+                        the_project, jira_project, issue_id, key, change_date_time, field, field_type, field_id, value_from, value_to, issue_type_name,issue_status, issue_status_cat_key, issue_status_cat_name
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ''', (the_project, project_code, issue_id, key, change_date_time, field, field_type, field_id, value_from, value_to, issue_type_name, issue_status, issue_status_cat_key, issue_status_cat_name))
         
         if len(issues) < max_results:
             break
