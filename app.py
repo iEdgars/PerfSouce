@@ -101,7 +101,7 @@ if st.session_state.auth is not None and st.session_state.board is None:
                 selected_board_id = None
                 selected_board_name = "Use whole Project"
             
-            st.session_state.board = (selected_board_id, selected_board_name)
+            st.session_state.board = (selected_board_id, selected_board_name, board_ids)
 
 #❗ Sidebar for some debug data❗
             with debugbar:
@@ -113,7 +113,7 @@ if st.session_state.board is not None:
     auth = st.session_state.auth
     project, jira_url = st.session_state.info
     project_id, project_key, project_name = st.session_state.project
-    board_id, board_name = st.session_state.board
+    board_id, board_name, board_ids = st.session_state.board
     # st.write(f"Retrieving data for {project_key}: {project_name}, {board_name}")
     st.write(f"Retrieving data for {project_key}: {project_name}")
 
@@ -141,7 +141,7 @@ if st.session_state.jira_data_bacth == 'Completed' and st.session_state.jira_fie
     auth = st.session_state.auth
     project, jira_url = st.session_state.info
     project_id, project_key, project_name = st.session_state.project
-    board_id, board_name = st.session_state.board
+    board_id, board_name, board_ids = st.session_state.board
 
     st.write('''
 At this step please match attributes required for metrics calculation to appropriate fields in Jira. 
@@ -274,7 +274,7 @@ if st.session_state.jira_field_mapping == 'Completed':
     auth = st.session_state.auth
     project, jira_url = st.session_state.info
     project_id, project_key, project_name = st.session_state.project
-    board_id, board_name = st.session_state.board
+    board_id, board_name, board_ids = st.session_state.board
     
     if st.session_state.jira_data_bacth2 is None:
         
