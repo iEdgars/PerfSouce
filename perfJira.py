@@ -379,6 +379,10 @@ def fetch_jira_sprints(the_project, jira_url, project_code, board_id, auth):
         
         # Make the request to Jira API
         response = requests.get(url, auth=auth)
+        if response.status_code == 400:
+            conn.close()
+            return  # Stop function execution
+
         data = response.json()
         
         # Insert data into table
