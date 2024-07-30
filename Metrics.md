@@ -1,12 +1,10 @@
 # Mertics
-
-## Mertic explanation, formulas, considerations
-
+# Mertic explanation, formulas, considerations
 
 ## Epic/Story Lead Time (days):
-Date to show on graph based on date Epic/Story is completed. Any non-completed items are excluded.
-**Calclucation:** Date completed - Date created
-**Jira Data Filtering:** `field = 'resolutiondate' AND field_value <> 'None'`
+Date to show on graph based on date Epic/Story is completed. Any non-completed items are excluded.__
+**Calclucation:** Date completed - Date created__
+**Jira Data Filtering:** `field = 'resolutiondate' AND field_value <> 'None'` __
 ```
 SELECT *
 FROM issues
@@ -16,6 +14,8 @@ WHERE field = 'resolutiondate'
 	AND field_value <> 'None'
 --WHERE issue_type_name = 'Epic'
 ```
+--
+**Considerations:** Taken are only Done items, Rejected or ToDo/InProgress are discarded.
 
 ## Epic/Story Cucle Time (days):
 Date to show on graph based on date Epic/Story is completed. Any non-completed items are excluded.
