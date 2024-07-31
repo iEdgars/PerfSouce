@@ -1,6 +1,6 @@
 # Mertic explanation, formulas, considerations
 
-### Epic/Story Lead Time (days):
+## Epic/Story Lead Time (days):
 Date to show on graph based on date Epic/Story is completed. Any non-completed items are excluded.  
 **Calclucation:** `Date completed - Date created`  
 **Jira Data Filtering:** `field = 'resolutiondate' AND field_value <> 'None'`  
