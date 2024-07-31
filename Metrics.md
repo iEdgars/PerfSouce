@@ -14,6 +14,7 @@ WHERE field IN('resolutiondate', 'created')
 	AND field_value <> 'None'
 --	AND issue_type_name = 'Epic' --for Epic Lead Time
 --	AND issue_type_name <> 'Epic' --for Story Lead Time
+```
 
 **Considerations:** Taken are only Done items, Rejected or ToDo/InProgress are discarded.
 
