@@ -3,7 +3,7 @@
 
 ## Epic/Story Lead Time (days):
 Date to show on graph based on date Epic/Story is completed. Any non-completed items are excluded.  
-**Calclucation:** Date completed - Date created  
+**Calclucation:** `Date completed - Date created`  
 **Jira Data Filtering:** `field = 'resolutiondate' AND field_value <> 'None'`  
 ```
 SELECT *
@@ -20,4 +20,4 @@ WHERE field IN('resolutiondate', 'created')
 
 ## Epic/Story Cucle Time (days):
 Date to show on graph based on date Epic/Story is completed. Any non-completed items are excluded.  
-**Calclucation:** Date completed - First "In Progress" date
+**Calclucation:** `Date completed - First "In Progress" date`
