@@ -36,7 +36,7 @@ def ttm_create_resolve_dates(epic_selection=False):
 
 # Function to get fist InProgress for Cycle time data
 # @st.cache_data(ttl=cacheTime)
-def ttm_first_inProgress_dates(epic_selection=True):
+def ttm_first_inProgress_dates(epic_selection=False):
     # Connect to SQLite database
     conn = sqlite3.connect('jira_projects.db')
     
