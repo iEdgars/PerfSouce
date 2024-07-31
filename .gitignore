@@ -163,5 +163,6 @@ jiraCreds.json
 
 ### working files
 approachTesting.ipynb
+*.ipynb
 
 /old
