@@ -4,7 +4,7 @@
 
 ### Epic/Story Lead Time (days):
 Date to show on graph based on date Epic/Story is completed. Any non-completed items are excluded.  
-**Calclucation:** `Date completed - Date created`  
+**Calclucation:** `Date completed - Date created`, data limited to 365 days based on resolution date
 ```
 SELECT *
 FROM issues
@@ -20,7 +20,7 @@ WHERE field IN('resolutiondate', 'created')
 
 ### Epic/Story Cycle Time (days):
 Date to show on graph based on date Epic/Story is completed. Any non-completed items are excluded.  
-**Calclucation:** `Date completed - First "In Progress" date`
+**Calclucation:** `Date completed - First "In Progress" date`, data limited to 365 days based on resolution date
 ```
 SELECT ic.the_project, ic.jira_project, ic.issue_id, ic."key", MIN(ic.change_date_time) first_in_progress
 FROM issue_changelog ic
