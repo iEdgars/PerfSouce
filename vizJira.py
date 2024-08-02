@@ -4,6 +4,15 @@ import altair as alt
 import numpy as np
 from datetime import datetime, timedelta
 
+# Define thresholds
+def get_color(the_time):
+    if the_time < 45:
+        return 'green'
+    elif the_time < 90:
+        return '#FFA500'  # Amber
+    else:
+        return 'red'
+
 def plot_lead_time_bar_chart(df):
     # Filter data to include only items resolved within the past 12 months
     today = datetime.today()
@@ -15,20 +24,11 @@ def plot_lead_time_bar_chart(df):
     monthly_lead_time = df_filtered.groupby('resolved_month')['lead_time'].mean().reset_index()
     monthly_lead_time['resolved_month'] = monthly_lead_time['resolved_month'].dt.to_timestamp()
 
-    # Define thresholds
-    def get_color(lead_time):
-        if lead_time < 45:
-            return 'Green'
-        elif lead_time < 90:
-            return 'Amber'
-        else:
-            return 'Red'
-
     monthly_lead_time['color'] = monthly_lead_time['lead_time'].apply(get_color)
 
     # Create Altair chart with explicit color scale
     color_scale = alt.Scale(
-        domain=['Green', 'Amber', 'Red'],
+        domain=['green', '#FFA500', 'red'],
         range=['green', '#FFA500', 'red']  # Green, Amber (Orange), Red
     )
 
@@ -74,21 +74,35 @@ def display_kpi_cards(df):
     slope, intercept = np.polyfit(x, y, 1)
     trend_per_month = slope
 
-    # Define thresholds for coloring
-    def get_color(lead_time):
-        if lead_time < 45:
-            return 'green'
-        elif lead_time < 90:
-            return '#FFA500'  # Amber
-        else:
-            return 'red'
-
     average_color = get_color(average_lead_time)
 
+    # CSS for KPI cards
+    card_css = """
+    <style>
+    .card {
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        padding: 10px;
+        margin: 5px;
+        text-align: center;
+    }
+    .card h3 {
+        margin: 0;
+        font-size: 1.2em;
+    }
+    .card h2 {
+        margin: 0;
+        font-size: 2em;
+    }
+    </style>
+    """
+
     # Display KPI cards
+    st.markdown(card_css, unsafe_allow_html=True)
+
     col1, col2, col3, col4 = st.columns(4)
-    col1.markdown(f"<h3 style='color:{average_color};'>Average</h3><h2 style='color:{average_color};'>{average_lead_time:.1f} days</h2>", unsafe_allow_html=True)
-    col2.metric("Deviation", f"{deviation_lead_time:.1f} days")
-    col3.metric("Median", f"{median_lead_time:.1f} days")
-    col4.metric("Maximum", f"{max_lead_time:.1f} days")
-    col1.metric("Trend", f"{trend_per_month:.1f} days per month")
+    col1.markdown(f"<div class='card'><h3 style='color:{average_color};'>Average</h3><h2 style='color:{average_color};'>{average_lead_time:.1f}</h2><h5 style='color:{average_color};'> days</h5></div>", unsafe_allow_html=True)
+    col2.markdown(f"<div class='card'><h3>Deviation</h3><h2>{deviation_lead_time:.1f}</h2><h5> days</h5></div>", unsafe_allow_html=True)
+    col3.markdown(f"<div class='card'><h3>Median</h3><h2>{median_lead_time:.1f}</h2><h5> days</h5></div>", unsafe_allow_html=True)
+    col4.markdown(f"<div class='card'><h3>Maximum</h3><h2>{max_lead_time:.1f}</h2><h5> days</h5></div>", unsafe_allow_html=True)
+    col1.markdown(f"<div class='card'><h3>Trend</h3><h2>{trend_per_month:.1f}</h2><h5> days per month</h5></div>", unsafe_allow_html=True)

@@ -12,13 +12,13 @@ import vizJira
 st.set_page_config(
     page_title="Time to Market",
     page_icon=":bar_chart:",
-    # layout="wide"
+    layout="wide"
 )
 
 st.title('Time to Market')
 
 st.write('''
-         Total time from Epic’s creation to its delivery to end users. Defines how long it takes to the team to deliver tangible value.\n 
+         Total time from Epic’s creation to its delivery to end users. Defines how long it takes to the team to deliver tangible value. 
          Time in days from the Epic's creation to "Closed" status, last 12 months avg. 
 ''')
 
@@ -27,5 +27,12 @@ df2 = vizDataJira.ttm_first_inProgress_dates(epic_selection=True)
 trans_df = vizDataJira.ttm_transform_and_join_dataframes(df, df2)
 
 
-vizJira.plot_lead_time_bar_chart(trans_df)
-vizJira.display_kpi_cards(trans_df)
+
+col1, col2 = st.columns(2)
+with col1:
+    vizJira.plot_lead_time_bar_chart(trans_df)
+
+with col2:
+    vizJira.display_kpi_cards(trans_df)
+
+st.divider()
