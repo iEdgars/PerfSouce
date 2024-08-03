@@ -3,17 +3,40 @@ import pandas as pd
 import altair as alt
 import numpy as np
 from datetime import datetime, timedelta
+from typing import Literal
 
 # Define thresholds
-def get_color(the_time):
-    if the_time < 45:
-        return 'green'
-    elif the_time < 90:
-        return '#FFA500'  # Amber
+def get_color(the_time, issue_type, metric_type):
+    RAG_scale = {
+        'Epic_Lead': {
+            'toGreen': 45,
+            'toAmber': 90
+        },
+        'Story_Lead': {
+            'toGreen': 30,
+            'toAmber': 45
+        },
+        'Epic_Cycle': {
+            'toGreen': 28,
+            'toAmber': 42
+        },
+        'Story_Cycle': {
+            'toGreen': 5,
+            'toAmber': 14
+        }
+    }
+    if the_time <= RAG_scale[f'{issue_type}_{metric_type}']['toGreen']:
+        return ['Green','green']
+    elif the_time <= RAG_scale[f'{issue_type}_{metric_type}']['toAmber']:
+        return ['Amber','#FFA500']  # Amber
     else:
-        return 'red'
+        return ['Red','red']
 
-def plot_lead_time_bar_chart(df):
+def plot_lead_time_bar_chart(
+        df,
+        issue_type: Literal['Epic','Story'],
+        metric_type: Literal['Lead','Cycle']
+        ):
     # Filter data to include only items resolved within the past 12 months
     today = datetime.today()
     twelve_months_ago = today - timedelta(days=365)
@@ -24,11 +47,12 @@ def plot_lead_time_bar_chart(df):
     monthly_lead_time = df_filtered.groupby('resolved_month')['lead_time'].mean().reset_index()
     monthly_lead_time['resolved_month'] = monthly_lead_time['resolved_month'].dt.to_timestamp()
 
-    monthly_lead_time['color'] = monthly_lead_time['lead_time'].apply(get_color)
+    #Apply the get_color function
+    monthly_lead_time['color'] = monthly_lead_time['lead_time'].apply(lambda x: get_color(x, issue_type, metric_type)[0])
 
     # Create Altair chart with explicit color scale
     color_scale = alt.Scale(
-        domain=['green', '#FFA500', 'red'],
+        domain=['Green', 'Amber', 'Red'],
         range=['green', '#FFA500', 'red']  # Green, Amber (Orange), Red
     )
 
@@ -52,7 +76,11 @@ def plot_lead_time_bar_chart(df):
 
     st.altair_chart(chart, use_container_width=True)
 
-def display_kpi_cards(df):
+def display_kpi_cards(
+        df,
+        issue_type: Literal['Epic','Story'],
+        metric_type: Literal['Lead','Cycle']
+        ):
     # Filter data to include only items resolved within the past 12 months
     today = datetime.today()
     twelve_months_ago = today - timedelta(days=365)
@@ -74,7 +102,7 @@ def display_kpi_cards(df):
     slope, intercept = np.polyfit(x, y, 1)
     trend_per_month = slope
 
-    average_color = get_color(average_lead_time)
+    average_color = get_color(average_lead_time, issue_type, metric_type)[1]
 
     # CSS for KPI cards
     card_css = """

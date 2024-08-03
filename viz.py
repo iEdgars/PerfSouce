@@ -26,13 +26,11 @@ df = vizDataJira.ttm_create_resolve_dates(epic_selection=True)
 df2 = vizDataJira.ttm_first_inProgress_dates(epic_selection=True)
 trans_df = vizDataJira.ttm_transform_and_join_dataframes(df, df2)
 
-
-
 col1, col2 = st.columns(2)
 with col1:
-    vizJira.plot_lead_time_bar_chart(trans_df)
+    vizJira.plot_lead_time_bar_chart(trans_df, 'Epic', 'Lead')
 
 with col2:
-    vizJira.display_kpi_cards(trans_df)
+    vizJira.display_kpi_cards(trans_df, 'Epic', 'Lead')
 
 st.divider()
