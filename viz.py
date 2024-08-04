@@ -51,11 +51,11 @@ with col2:
 st.divider()
 
 
-t2m = ['Epic', 'Cycle']
+t2m = ['Story', 'Cycle']
 st.write(st_help.ttm_text(t2m[0], t2m[1]))
 
-df = vizDataJira.ttm_create_resolve_dates(epic_selection=True)
-df2 = vizDataJira.ttm_first_inProgress_dates(epic_selection=True)
+df = vizDataJira.ttm_create_resolve_dates(epic_selection=False)
+df2 = vizDataJira.ttm_first_inProgress_dates(epic_selection=False)
 trans_df = vizDataJira.ttm_transform_and_join_dataframes(df, df2)
 
 col1, col2 = st.columns(2)

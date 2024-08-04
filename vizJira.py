@@ -86,28 +86,34 @@ def display_kpi_cards(
         issue_type: Literal['Epic','Story'],
         metric_type: Literal['Lead','Cycle']
         ):
+    metric_low = metric_type.lower()
+
     # Filter data to include only items resolved within the past 12 months
     today = datetime.today()
     twelve_months_ago = today - timedelta(days=365)
-    df_filtered = df[df['resolved'] >= twelve_months_ago].copy()
+    if metric_type == 'Lead':
+        df_filtered = df[df['resolved'] >= twelve_months_ago].copy()
+    elif metric_type == 'Cycle':
+        df_filtered = df[(df['resolved'] >= twelve_months_ago) & (df['cycle_time'].notna())].copy()
 
     # Calculate statistics
-    average_lead_time = df_filtered['lead_time'].mean()
-    deviation_lead_time = df_filtered['lead_time'].std()
-    median_lead_time = df_filtered['lead_time'].median()
-    max_lead_time = df_filtered['lead_time'].max()
+    average_time = df_filtered[f'{metric_low}_time'].mean()
+    deviation_time = df_filtered[f'{metric_low}_time'].std()
+    median_time = df_filtered[f'{metric_low}_time'].median()
+    max_time = df_filtered[f'{metric_low}_time'].max()
 
     # Calculate trend (slope of the regression line)
     df_filtered['resolved_month'] = df_filtered['resolved'].dt.to_period('M')
-    monthly_lead_time = df_filtered.groupby('resolved_month')['lead_time'].mean().reset_index()
-    monthly_lead_time['resolved_month'] = monthly_lead_time['resolved_month'].dt.to_timestamp()
+    monthly_time = df_filtered.groupby('resolved_month')[f'{metric_low}_time'].mean().reset_index()
+    monthly_time['resolved_month'] = monthly_time['resolved_month'].dt.to_timestamp()
 
-    x = np.arange(len(monthly_lead_time))
-    y = monthly_lead_time['lead_time'].values
+    x = np.arange(len(monthly_time))
+    y = monthly_time[f'{metric_low}_time'].values
+    y = y.astype(float)
     slope, intercept = np.polyfit(x, y, 1)
     trend_per_month = slope
 
-    average_color = get_color(average_lead_time, issue_type, metric_type)[1]
+    average_color = get_color(average_time, issue_type, metric_type)[1]
 
     # CSS for KPI cards
     card_css = """
@@ -134,8 +140,9 @@ def display_kpi_cards(
     st.markdown(card_css, unsafe_allow_html=True)
 
     col1, col2, col3, col4 = st.columns(4)
-    col1.markdown(f"<div class='card'><h3>Average</h3><h2 style='color:{average_color};'>{average_lead_time:.1f}</h2><h5 style='color:{average_color};'> days</h5></div>", unsafe_allow_html=True)
-    col2.markdown(f"<div class='card'><h3>Deviation</h3><h2>{deviation_lead_time:.1f}</h2><h5> days</h5></div>", unsafe_allow_html=True)
-    col3.markdown(f"<div class='card'><h3>Median</h3><h2>{median_lead_time:.1f}</h2><h5> days</h5></div>", unsafe_allow_html=True)
-    col4.markdown(f"<div class='card'><h3>Maximum</h3><h2>{max_lead_time:.1f}</h2><h5> days</h5></div>", unsafe_allow_html=True)
+    col1.markdown(f"<div class='card'><h3>Average</h3><h2 style='color:{average_color};'>{average_time:.1f}</h2><h5 style='color:{average_color};'> days</h5></div>", unsafe_allow_html=True)
+    col2.markdown(f"<div class='card'><h3>Deviation</h3><h2>{deviation_time:.1f}</h2><h5> days</h5></div>", unsafe_allow_html=True)
+    col3.markdown(f"<div class='card'><h3>Median</h3><h2>{median_time:.1f}</h2><h5> days</h5></div>", unsafe_allow_html=True)
+    col4.markdown(f"<div class='card'><h3>Maximum</h3><h2>{max_time:.1f}</h2><h5> days</h5></div>", unsafe_allow_html=True)
     col1.markdown(f"<div class='card'><h3>Trend</h3><h2>{trend_per_month:.1f}</h2><h5> days per month</h5></div>", unsafe_allow_html=True)
+
