@@ -76,6 +76,50 @@ def plot_lead_time_bar_chart(
 
     st.altair_chart(chart, use_container_width=True)
 
+def plot_cycle_time_bar_chart(
+        df,
+        issue_type: Literal['Epic','Story'],
+        metric_type: Literal['Lead','Cycle']
+        ):
+    # Filter data to include only items resolved within the past 12 months
+    today = datetime.today()
+    twelve_months_ago = today - timedelta(days=365)
+    df_filtered = df[(df['resolved'] >= twelve_months_ago) & (df['cycle_time'].notna())].copy()
+
+    # Calculate monthly cycle time based on resolved date
+    df_filtered['resolved_month'] = df_filtered['resolved'].dt.to_period('M')
+    monthly_cycle_time = df_filtered.groupby('resolved_month')['cycle_time'].mean().reset_index()
+    monthly_cycle_time['resolved_month'] = monthly_cycle_time['resolved_month'].dt.to_timestamp()
+
+    # Apply the get_color function
+    monthly_cycle_time['color'] = monthly_cycle_time['cycle_time'].apply(lambda x: get_color(x, issue_type, metric_type)[0])
+
+    # Create Altair chart with explicit color scale
+    color_scale = alt.Scale(
+        domain=['Green', 'Amber', 'Red'],
+        range=['green', '#FFA500', 'red']  # Green, Amber (Orange), Red
+    )
+
+    base = alt.Chart(monthly_cycle_time).encode(
+        x=alt.X('resolved_month:T', title='Month', axis=alt.Axis(labelAngle=-45, format='%b, %y')),  # Format month and year
+        y=alt.Y('cycle_time:Q', title='Days'),
+        color=alt.Color('color:N', scale=color_scale, legend=alt.Legend(title="Cycle Time Categories", orient='bottom'))
+    )
+
+    bars = base.mark_bar(size=20).encode(
+        tooltip=['resolved_month:T', 'cycle_time:Q']
+    )
+
+    trend = base.transform_regression('resolved_month', 'cycle_time').mark_line(strokeDash=[5,5]).encode(
+        color=alt.value('gray')
+    )
+
+    chart = (bars + trend).properties(
+        title=f'{issue_type} Cycle Time, days'
+    )
+
+    st.altair_chart(chart, use_container_width=True)
+
 def display_kpi_cards(
         df,
         issue_type: Literal['Epic','Story'],
