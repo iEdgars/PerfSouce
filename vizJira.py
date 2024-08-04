@@ -5,6 +5,8 @@ import numpy as np
 from datetime import datetime, timedelta
 from typing import Literal
 
+cacheTime = 300 # time to keep cache in seconds
+
 # Define thresholds
 def get_color(the_time, issue_type, metric_type):
     RAG_scale = {
@@ -32,6 +34,7 @@ def get_color(the_time, issue_type, metric_type):
     else:
         return ['Red','red']
 
+@st.cache_data(ttl=cacheTime)
 def plot_lead_cycle_bar_chart(
         df,
         issue_type: Literal['Epic','Story'],
@@ -81,6 +84,7 @@ def plot_lead_cycle_bar_chart(
 
     st.altair_chart(chart, use_container_width=True)
 
+@st.cache_data(ttl=cacheTime)
 def display_kpi_cards(
         df,
         issue_type: Literal['Epic','Story'],
@@ -139,10 +143,10 @@ def display_kpi_cards(
     # Display KPI cards
     st.markdown(card_css, unsafe_allow_html=True)
 
-    col1, col2, col3, col4 = st.columns(4)
+    col1, col2, col3 = st.columns(3)
     col1.markdown(f"<div class='card'><h3>Average</h3><h2 style='color:{average_color};'>{average_time:.1f}</h2><h5 style='color:{average_color};'> days</h5></div>", unsafe_allow_html=True)
     col2.markdown(f"<div class='card'><h3>Deviation</h3><h2>{deviation_time:.1f}</h2><h5> days</h5></div>", unsafe_allow_html=True)
     col3.markdown(f"<div class='card'><h3>Median</h3><h2>{median_time:.1f}</h2><h5> days</h5></div>", unsafe_allow_html=True)
-    col4.markdown(f"<div class='card'><h3>Maximum</h3><h2>{max_time:.1f}</h2><h5> days</h5></div>", unsafe_allow_html=True)
-    col1.markdown(f"<div class='card'><h3>Trend</h3><h2>{trend_per_month:.1f}</h2><h5> days per month</h5></div>", unsafe_allow_html=True)
+    col1.markdown(f"<div class='card'><h3>Maximum</h3><h2>{max_time:.1f}</h2><h5> days</h5></div>", unsafe_allow_html=True)
+    col2.markdown(f"<div class='card'><h3>Trend</h3><h2>{trend_per_month:.1f}</h2><h5> days per month</h5></div>", unsafe_allow_html=True)
 

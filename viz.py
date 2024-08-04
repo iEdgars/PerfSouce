@@ -18,51 +18,24 @@ st.set_page_config(
 
 st.title('Time to Market')
 
-t2m = ['Epic', 'Lead']
-st.write(st_help.ttm_text(t2m[0], t2m[1]))
+for mt in ['Lead','Cycle']:
+    for it in ['Epic', 'Story']:
+        st.write(st_help.ttm_text(it, mt))
 
-df = vizDataJira.ttm_create_resolve_dates(epic_selection=True)
-df2 = vizDataJira.ttm_first_inProgress_dates(epic_selection=True)
-trans_df = vizDataJira.ttm_transform_and_join_dataframes(df, df2)
+        if it == 'Epic':
+            selection = True
+        else:
+            selection = False
 
-col1, col2 = st.columns(2)
-with col1:
-    vizJira.plot_lead_cycle_bar_chart(trans_df, t2m[0], t2m[1])
+        df = vizDataJira.ttm_create_resolve_dates(epic_selection=selection)
+        df2 = vizDataJira.ttm_first_inProgress_dates(epic_selection=selection)
+        trans_df = vizDataJira.ttm_transform_and_join_dataframes(df, df2)
 
-with col2:
-    vizJira.display_kpi_cards(trans_df, t2m[0], t2m[1])
+        col1, col2 = st.columns([3,4])
+        with col1:
+            vizJira.plot_lead_cycle_bar_chart(trans_df, it, mt)
 
-st.divider()
+        with col2:
+            vizJira.display_kpi_cards(trans_df, it, mt)
 
-t2m = ['Story', 'Lead']
-st.write(st_help.ttm_text(t2m[0], t2m[1]))
-
-df = vizDataJira.ttm_create_resolve_dates(epic_selection=False)
-df2 = vizDataJira.ttm_first_inProgress_dates(epic_selection=False)
-trans_df = vizDataJira.ttm_transform_and_join_dataframes(df, df2)
-
-col1, col2 = st.columns(2)
-with col1:
-    vizJira.plot_lead_cycle_bar_chart(trans_df, t2m[0], t2m[1])
-
-with col2:
-    vizJira.display_kpi_cards(trans_df, t2m[0], t2m[1])
-
-st.divider()
-
-
-t2m = ['Story', 'Cycle']
-st.write(st_help.ttm_text(t2m[0], t2m[1]))
-
-df = vizDataJira.ttm_create_resolve_dates(epic_selection=False)
-df2 = vizDataJira.ttm_first_inProgress_dates(epic_selection=False)
-trans_df = vizDataJira.ttm_transform_and_join_dataframes(df, df2)
-
-col1, col2 = st.columns(2)
-with col1:
-    vizJira.plot_lead_cycle_bar_chart(trans_df, t2m[0], t2m[1])
-
-with col2:
-    vizJira.display_kpi_cards(trans_df, t2m[0], t2m[1])
-
-st.divider()
+        st.divider()

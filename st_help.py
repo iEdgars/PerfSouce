@@ -52,9 +52,16 @@ def ttm_text(
         issue_type: Literal['Epic','Story'],
         metric_type: Literal['Lead','Cycle']
         ):
-    txt = f'''
-         Total time from {issue_type}'s creation to its delivery to end users. Defines how long it takes to the team to deliver tangible value. 
-         Time in days from the {issue_type}'s creation to "Closed" status, last 12 months avg. 
-    '''
     
+    if metric_type == 'Lead':
+        txt = f'''
+        Total time from {issue_type}'s creation to its delivery to end users. Defines how long it takes to the team to deliver tangible value. 
+        Time in days from the {issue_type}'s creation to "Closed" status, last 12 months avg. 
+        '''
+    elif metric_type == 'Cycle':
+        txt = f'''
+        The {issue_type}'s time in development until {issue_type} is available to end users in prod.
+        Time in days from the {issue_type} becoming "In Progress" to "Closed" status, last 12 months avg. 
+        '''
+
     return txt
