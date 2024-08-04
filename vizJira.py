@@ -32,90 +32,51 @@ def get_color(the_time, issue_type, metric_type):
     else:
         return ['Red','red']
 
-def plot_lead_time_bar_chart(
+def plot_lead_cycle_bar_chart(
         df,
         issue_type: Literal['Epic','Story'],
         metric_type: Literal['Lead','Cycle']
         ):
+    metric_low = metric_type.lower()
+
     # Filter data to include only items resolved within the past 12 months
     today = datetime.today()
     twelve_months_ago = today - timedelta(days=365)
-    df_filtered = df[df['resolved'] >= twelve_months_ago].copy()
+    if metric_type == 'Lead':
+        df_filtered = df[df['resolved'] >= twelve_months_ago].copy()
+    elif metric_type == 'Cycle':
+        df_filtered = df[(df['resolved'] >= twelve_months_ago) & (df['cycle_time'].notna())].copy()
 
     # Calculate monthly lead time based on resolved date
     df_filtered['resolved_month'] = df_filtered['resolved'].dt.to_period('M')
-    monthly_lead_time = df_filtered.groupby('resolved_month')['lead_time'].mean().reset_index()
-    monthly_lead_time['resolved_month'] = monthly_lead_time['resolved_month'].dt.to_timestamp()
+    monthly_time = df_filtered.groupby('resolved_month')[f'{metric_low}_time'].mean().reset_index()
+    monthly_time['resolved_month'] = monthly_time['resolved_month'].dt.to_timestamp()
 
     #Apply the get_color function
-    monthly_lead_time['color'] = monthly_lead_time['lead_time'].apply(lambda x: get_color(x, issue_type, metric_type)[0])
-
+    monthly_time['color'] = monthly_time[f'{metric_low}_time'].apply(lambda x: get_color(x, issue_type, metric_type)[0])
+    
     # Create Altair chart with explicit color scale
     color_scale = alt.Scale(
         domain=['Green', 'Amber', 'Red'],
         range=['green', '#FFA500', 'red']  # Green, Amber (Orange), Red
     )
 
-    base = alt.Chart(monthly_lead_time).encode(
+    base = alt.Chart(monthly_time).encode(
         x=alt.X('resolved_month:T', title='Month', axis=alt.Axis(labelAngle=-45, format='%b, %y')),  # Format month and year
-        y=alt.Y('lead_time:Q', title='Days'),
-        color=alt.Color('color:N', scale=color_scale, legend=alt.Legend(title="Lead Time Categories", orient='bottom'))
+        y=alt.Y(f'{metric_low}_time:Q', title='Days'),
+        color=alt.Color('color:N', scale=color_scale, legend=alt.Legend(title=f'{metric_type} Time Categories', orient='bottom'))
     )
 
     bars = base.mark_bar(size=20).encode(
-        tooltip=['resolved_month:T', 'lead_time:Q']
+        tooltip=['resolved_month:T', f'{metric_low}_time:Q']
     )
 
-    trend = base.transform_regression('resolved_month', 'lead_time').mark_line(strokeDash=[5,5]).encode(
+    trend = base.transform_regression('resolved_month', f'{metric_low}_time').mark_line(strokeDash=[5,5]).encode(
         color=alt.value('gray')
     )
 
     chart = (bars + trend).properties(
-        title=f'{issue_type} Lead Time, days'
-    )
-
-    st.altair_chart(chart, use_container_width=True)
-
-def plot_cycle_time_bar_chart(
-        df,
-        issue_type: Literal['Epic','Story'],
-        metric_type: Literal['Lead','Cycle']
-        ):
-    # Filter data to include only items resolved within the past 12 months
-    today = datetime.today()
-    twelve_months_ago = today - timedelta(days=365)
-    df_filtered = df[(df['resolved'] >= twelve_months_ago) & (df['cycle_time'].notna())].copy()
-
-    # Calculate monthly cycle time based on resolved date
-    df_filtered['resolved_month'] = df_filtered['resolved'].dt.to_period('M')
-    monthly_cycle_time = df_filtered.groupby('resolved_month')['cycle_time'].mean().reset_index()
-    monthly_cycle_time['resolved_month'] = monthly_cycle_time['resolved_month'].dt.to_timestamp()
-
-    # Apply the get_color function
-    monthly_cycle_time['color'] = monthly_cycle_time['cycle_time'].apply(lambda x: get_color(x, issue_type, metric_type)[0])
-
-    # Create Altair chart with explicit color scale
-    color_scale = alt.Scale(
-        domain=['Green', 'Amber', 'Red'],
-        range=['green', '#FFA500', 'red']  # Green, Amber (Orange), Red
-    )
-
-    base = alt.Chart(monthly_cycle_time).encode(
-        x=alt.X('resolved_month:T', title='Month', axis=alt.Axis(labelAngle=-45, format='%b, %y')),  # Format month and year
-        y=alt.Y('cycle_time:Q', title='Days'),
-        color=alt.Color('color:N', scale=color_scale, legend=alt.Legend(title="Cycle Time Categories", orient='bottom'))
-    )
-
-    bars = base.mark_bar(size=20).encode(
-        tooltip=['resolved_month:T', 'cycle_time:Q']
-    )
-
-    trend = base.transform_regression('resolved_month', 'cycle_time').mark_line(strokeDash=[5,5]).encode(
-        color=alt.value('gray')
-    )
-
-    chart = (bars + trend).properties(
-        title=f'{issue_type} Cycle Time, days'
+        title=f'{issue_type} {metric_type} Time, days'
     )
 
     st.altair_chart(chart, use_container_width=True)
