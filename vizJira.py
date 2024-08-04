@@ -129,7 +129,7 @@ def display_kpi_cards(
     st.markdown(card_css, unsafe_allow_html=True)
 
     col1, col2, col3, col4 = st.columns(4)
-    col1.markdown(f"<div class='card'><h3 style='color:{average_color};'>Average</h3><h2 style='color:{average_color};'>{average_lead_time:.1f}</h2><h5 style='color:{average_color};'> days</h5></div>", unsafe_allow_html=True)
+    col1.markdown(f"<div class='card'><h3>Average</h3><h2 style='color:{average_color};'>{average_lead_time:.1f}</h2><h5 style='color:{average_color};'> days</h5></div>", unsafe_allow_html=True)
     col2.markdown(f"<div class='card'><h3>Deviation</h3><h2>{deviation_lead_time:.1f}</h2><h5> days</h5></div>", unsafe_allow_html=True)
     col3.markdown(f"<div class='card'><h3>Median</h3><h2>{median_lead_time:.1f}</h2><h5> days</h5></div>", unsafe_allow_html=True)
     col4.markdown(f"<div class='card'><h3>Maximum</h3><h2>{max_lead_time:.1f}</h2><h5> days</h5></div>", unsafe_allow_html=True)
