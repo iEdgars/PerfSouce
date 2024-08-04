@@ -1,3 +1,5 @@
+from typing import Literal
+
 #storing Help text seperatelly to simplify main code
 project_help = '''
 Your project code in <EPAM> system.\n 
@@ -45,3 +47,14 @@ The value is used for calculating metrics in story points such as Burn Up in sto
 estimation_in_OrgH_help = '''
 The value is used for calculating metrics in original hours such as Burn Up in hours, Committed vs Completed & Commitment Rate, etc.
 '''
+
+def ttm_text(
+        issue_type: Literal['Epic','Story'],
+        metric_type: Literal['Lead','Cycle']
+        ):
+    txt = f'''
+         Total time from {issue_type}'s creation to its delivery to end users. Defines how long it takes to the team to deliver tangible value. 
+         Time in days from the {issue_type}'s creation to "Closed" status, last 12 months avg. 
+    '''
+    
+    return txt

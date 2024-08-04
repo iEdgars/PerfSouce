@@ -71,7 +71,7 @@ def plot_lead_time_bar_chart(
     )
 
     chart = (bars + trend).properties(
-        title='Epic Lead Time, days'
+        title=f'{issue_type} Lead Time, days'
     )
 
     st.altair_chart(chart, use_container_width=True)

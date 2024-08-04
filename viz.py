@@ -7,6 +7,7 @@ import sqlite3
 # custom project scripts
 import vizDataJira
 import vizJira
+import st_help
 
 # Set the page config
 st.set_page_config(
@@ -17,10 +18,8 @@ st.set_page_config(
 
 st.title('Time to Market')
 
-st.write('''
-         Total time from Epic’s creation to its delivery to end users. Defines how long it takes to the team to deliver tangible value. 
-         Time in days from the Epic's creation to "Closed" status, last 12 months avg. 
-''')
+t2m = ['Epic', 'Lead']
+st.write(st_help.ttm_text(t2m[0], t2m[1]))
 
 df = vizDataJira.ttm_create_resolve_dates(epic_selection=True)
 df2 = vizDataJira.ttm_first_inProgress_dates(epic_selection=True)
@@ -28,9 +27,25 @@ trans_df = vizDataJira.ttm_transform_and_join_dataframes(df, df2)
 
 col1, col2 = st.columns(2)
 with col1:
-    vizJira.plot_lead_time_bar_chart(trans_df, 'Epic', 'Lead')
+    vizJira.plot_lead_time_bar_chart(trans_df, t2m[0], t2m[1])
 
 with col2:
-    vizJira.display_kpi_cards(trans_df, 'Epic', 'Lead')
+    vizJira.display_kpi_cards(trans_df, t2m[0], t2m[1])
+
+st.divider()
+
+t2m = ['Story', 'Lead']
+st.write(st_help.ttm_text(t2m[0], t2m[1]))
+
+df = vizDataJira.ttm_create_resolve_dates(epic_selection=False)
+df2 = vizDataJira.ttm_first_inProgress_dates(epic_selection=False)
+trans_df = vizDataJira.ttm_transform_and_join_dataframes(df, df2)
+
+col1, col2 = st.columns(2)
+with col1:
+    vizJira.plot_lead_time_bar_chart(trans_df, t2m[0], t2m[1])
+
+with col2:
+    vizJira.display_kpi_cards(trans_df, t2m[0], t2m[1])
 
 st.divider()
