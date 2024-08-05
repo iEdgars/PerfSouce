@@ -1,11 +1,13 @@
 import pandas as pd
 import sqlite3
 import streamlit as st
+import gc
+from datetime import datetime
 
 cacheTime = 900 # time to keep cache in seconds
 
 # Function to get Lead time data
-# @st.cache_data(ttl=cacheTime)
+@st.cache_data(ttl=cacheTime)
 def ttm_create_resolve_dates(epic_selection=False):
     # Connect to SQLite database
     conn = sqlite3.connect('jira_projects.db')
@@ -35,7 +37,7 @@ def ttm_create_resolve_dates(epic_selection=False):
     return df
 
 # Function to get fist InProgress for Cycle time data
-# @st.cache_data(ttl=cacheTime)
+@st.cache_data(ttl=cacheTime)
 def ttm_first_inProgress_dates(epic_selection=False):
     # Connect to SQLite database
     conn = sqlite3.connect('jira_projects.db')
@@ -68,7 +70,7 @@ def ttm_first_inProgress_dates(epic_selection=False):
     return df
 
 # Combined function to transform and join dataframes
-# @st.cache_data(ttl=cacheTime)
+@st.cache_data(ttl=cacheTime)
 def ttm_transform_and_join_dataframes(df_issues, df_first_in_progress):
     # Pivot the DataFrame to get 'created' and 'resolutiondate' in columns
     df_pivot = df_issues.pivot(index=['the_project', 'jira_project', 'issue_id', 'key', 'issue_type_name'], 
@@ -103,4 +105,86 @@ def ttm_transform_and_join_dataframes(df_issues, df_first_in_progress):
     # Convert cycle_time to integer, handling NaN values
     merged_df['cycle_time'] = merged_df['cycle_time'].fillna(-1).astype(int).replace(-1, pd.NA)
     
+    # Cleaning up
+    # Clear unnecessary DataFrames
+    del df_pivot
+    del df_first_in_progress
+    # Run garbage collector to free up memory
+    gc.collect()
+
     return merged_df
+
+# Funtion to get latest 
+@st.cache_data(ttl=cacheTime)
+def ttm_calculate_time_in_status():
+
+    # Connect to SQLite database
+    conn = sqlite3.connect('jira_projects.db')
+
+    # Load data into DataFrames
+    issues = '''
+    SELECT the_project, jira_project, issue_id, "key", field, field_value, issue_type_name, issue_status
+    FROM issues
+    WHERE field = 'created'
+    '''
+
+    changelog = '''
+    SELECT the_project, jira_project, issue_id, "key", change_date_time, field, value_from, value_to, issue_type_name
+    FROM issue_changelog ic
+    WHERE field = 'status'
+    '''
+
+    issues_df = pd.read_sql_query(issues, conn)
+    changelog_df = pd.read_sql_query(changelog, conn)
+
+    # Close the connection
+    conn.close()
+
+    # Sort values to ensure correct time difference calculation
+    changelog_df = changelog_df.sort_values(by=['issue_id', 'change_date_time'])
+
+    # Get the first status change for each issue key
+    first_status_changes = changelog_df.groupby('issue_id').first().reset_index()
+    # Move value_from to value_to
+    first_status_changes['value_to'] = first_status_changes['value_from']
+    # Replace value_from with 'Created'
+    first_status_changes['value_from'] = 'Created'
+
+    # Replace change_date_time with field_value from issues_df
+    issues_df = issues_df.rename(columns={'field_value': 'created_date'})
+    first_status_changes = pd.merge(first_status_changes, issues_df[['issue_id', 'created_date']], on='issue_id', how='left')
+    first_status_changes['change_date_time'] = first_status_changes['created_date']
+    first_status_changes = first_status_changes.drop(columns=['created_date']) # Drop the temporary 'created_date' column
+
+    # Get the last status change for each issue key
+    last_status_changes = changelog_df.groupby('issue_id').last().reset_index()
+    # Set value_from and value_to to the latest status
+    last_status_changes['value_from'] = last_status_changes['value_to']
+    # Set change_date_time to the current date and time
+    last_status_changes['change_date_time'] = pd.Timestamp.now(tz='UTC')
+
+    # Append the modified first_status_changes and last_status_changes to changelog_df
+    combined_df = pd.concat([first_status_changes, changelog_df, last_status_changes])
+
+    # Convert change_date_time to datetime format
+    combined_df['change_date_time'] = pd.to_datetime(combined_df['change_date_time'], errors='coerce', utc=True)
+
+    # Sort the combined DataFrame by issue_id and change_date_time
+    combined_df = combined_df.sort_values(by=['issue_id', 'change_date_time']).reset_index(drop=True)
+
+    # Calculate time in status
+    combined_df['time_in_status'] = combined_df.groupby('issue_id')['change_date_time'].diff().dt.total_seconds() / 86400.0
+
+    # Fill the first row of each group with 0
+    combined_df['time_in_status'] = combined_df['time_in_status'].fillna(0)
+
+    # Cleaning up
+    # Clear unnecessary DataFrames
+    del issues_df
+    del changelog_df
+    del first_status_changes
+    del last_status_changes
+    # Run garbage collector to free up memory
+    gc.collect()
+
+    return combined_df
