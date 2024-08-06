@@ -116,7 +116,7 @@ def ttm_transform_and_join_dataframes(df_issues, df_first_in_progress):
 
 # Funtion to get latest 
 @st.cache_data(ttl=cacheTime)
-def ttm_calculate_time_in_status():
+def calculate_time_in_status():
 
     # Connect to SQLite database
     conn = sqlite3.connect('jira_projects.db')
@@ -134,8 +134,15 @@ def ttm_calculate_time_in_status():
     WHERE field = 'status'
     '''
 
+    status_category = '''
+    SELECT the_project, jira_project, status_name, untranslated_name, category_name
+    FROM project_issues_and_statuses
+    GROUP BY the_project, jira_project, status_name, untranslated_name, category_name
+    '''
+
     issues_df = pd.read_sql_query(issues, conn)
     changelog_df = pd.read_sql_query(changelog, conn)
+    statusCat_df = pd.read_sql_query(status_category, conn)
 
     # Close the connection
     conn.close()
@@ -178,12 +185,19 @@ def ttm_calculate_time_in_status():
     # Fill the first row of each group with 0
     combined_df['time_in_status'] = combined_df['time_in_status'].fillna(0)
 
-    # Cleaning up
+    # Join statusCat_df to combined_df on value_to = untranslated_name
+    combined_df = pd.merge(combined_df, statusCat_df[['untranslated_name', 'category_name']], 
+                        left_on='value_to', right_on='untranslated_name', how='left')
+    # Drop the temporary 'untranslated_name' column
+    combined_df = combined_df.drop(columns=['untranslated_name'])
+
     # Clear unnecessary DataFrames
     del issues_df
     del changelog_df
     del first_status_changes
     del last_status_changes
+    del statusCat_df
+
     # Run garbage collector to free up memory
     gc.collect()
 
