@@ -45,6 +45,6 @@ Dataset is then calculated to take dates for each assignment start, end or both 
 - `Month End - Status Start` - When Status started in current month and has not ended will end of month
 - `Month End - Month Start` - When Status started in previous month and has not ended will end of month
 
-**Visual filtering:** Issue type (*Story, Bug*), Status Group (*All Ready, In Progress statuses*), Status (*lowest status level as Backlog, UAT, Ready*) 
+**Visual filtering:** Issue type (*Story, Bug*), Status Group (all *To Do, In Progress* statuses), Status (lowest status level as *Backlog, UAT, Ready*) 
 
-**Considerations:** Items in **Done** Status Group are excluded.
+**Considerations:** Items in ***Done*** Status Group are excluded.
