@@ -35,3 +35,16 @@ GROUP BY ic.the_project, ic.jira_project, ic.issue_id, ic."key"
 ```
 
 **Considerations:** Taken are only items having InProgress. Some items that has a lot of changes are missing `expand=changelog` records, therefore missing date it went to **In Progress** and therfore is discarded in Cycle time calculations even though it was completed. **Possible option** in such cases to include Lead time when Cycle time is not available. *(example of such behaviour -3780)*
+
+### Time in Status by month:
+Show time per each status or status group for items within the month.
+**Calclucation:** `vizDataJira.ttm_calculate_time_in_status()` exports all status changes from `issue_changelog` adding row for creation date for time in first status and row of today's date for time between latest change for current status.  
+Dataset is then calculated to take dates for each assignment start, end or both within the month. **Time In Status** then is calculated as difference between: 
+- `Status End - Status Start` - When Status started and ended within the month
+- `Status End - Month Start` - When Status started in previous month, but ended in current
+- `Month End - Status Start` - When Status started in current month and has not ended will end of month
+- `Month End - Month Start` - When Status started in previous month and has not ended will end of month
+
+**Visual filtering:** Issue type (*Story, Bug*), Status Group (*All Ready, In Progress statuses*), Status (*lowest status level as Backlog, UAT, Ready*) 
+
+**Considerations:** Items in **Done** Status Group are excluded.
