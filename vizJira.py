@@ -151,6 +151,7 @@ def display_kpi_cards(
     col2.markdown(f"<div class='card'><h3>Trend</h3><h2>{trend_per_month:.1f}</h2><h5> days per month</h5></div>", unsafe_allow_html=True)
 
 # Function to build the monthly "Time In Status" bar chart
+@st.cache_data(ttl=cacheTime)
 def build_time_in_status_chart(df):
     # Calculate the start date for the past 12 full months
     today = pd.Timestamp.now(tz='UTC')
@@ -223,11 +224,15 @@ def build_time_in_status_chart(df):
     monthly_df = results_df.groupby(['month', 'status'])['days_in_status'].mean().reset_index()
 
     # Create the bar chart
-    chart = alt.Chart(monthly_df).mark_bar().encode(
+    chart = alt.Chart(monthly_df).mark_bar(size=20).encode(
         x=alt.X('month:T', title='Month'),
         y=alt.Y('mean(days_in_status):Q', title='Average Days'),
         color='status:N',
-        tooltip=['month:T', 'status:N', 'mean(days_in_status):Q']
+        tooltip=[
+            alt.Tooltip('month:T', title='Month'),
+            alt.Tooltip('status:N', title='Status'),
+            alt.Tooltip('mean(days_in_status):Q', title='Average Days')
+        ]
     ).properties(
         title='Average Time in Status By Month',
         width=800,
