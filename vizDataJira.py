@@ -116,7 +116,7 @@ def ttm_transform_and_join_dataframes(df_issues, df_first_in_progress):
 
 # Funtion to get latest 
 @st.cache_data(ttl=cacheTime)
-def calculate_time_in_status():
+def ttm_calculate_time_in_status():
 
     # Connect to SQLite database
     conn = sqlite3.connect('jira_projects.db')
