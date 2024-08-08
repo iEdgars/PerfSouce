@@ -4,6 +4,7 @@ import altair as alt
 import numpy as np
 from datetime import datetime, timedelta
 from typing import Literal
+import warnings
 
 cacheTime = 300 # time to keep cache in seconds
 
@@ -151,8 +152,16 @@ def display_kpi_cards(
     col2.markdown(f"<div class='card'><h3>Trend</h3><h2>{trend_per_month:.1f}</h2><h5> days per month</h5></div>", unsafe_allow_html=True)
 
 # Function to build the monthly "Time In Status" bar chart
-@st.cache_data(ttl=cacheTime)
-def build_time_in_status_chart(df):
+@st.cache_data(ttl=cacheTime, show_spinner=False)
+def build_time_in_status_chart(df, toggle_status_category, issue_types, status_category_filter):
+    # Filter the DataFrame by issue type
+    if issue_types:
+        df = df[df['issue_type_name'].isin(issue_types)]
+
+    # Filter the DataFrame by status category
+    if status_category_filter and status_category_filter != "All categories":
+        df = df[df['category_name'] == status_category_filter]
+
     # Calculate the start date for the past 12 full months
     today = pd.Timestamp.now(tz='UTC')
     start_date = (today.replace(day=1) - pd.DateOffset(months=12)).replace(day=1)
@@ -167,11 +176,12 @@ def build_time_in_status_chart(df):
 
     # Combine the filtered DataFrame with the latest records before the start date
     combined_df = pd.concat([filtered_df, latest_before_start_date]).drop_duplicates().reset_index(drop=True)
+
     # Create a DataFrame to store the results
     results = []
 
     # Iterate through each issue
-    for issue_id, issue_df in df.groupby('issue_id'):
+    for issue_id, issue_df in combined_df.groupby('issue_id'):
         issue_df = issue_df.sort_values(by='change_date_time').reset_index(drop=True)
         for i in range(len(issue_df)):
             start_date = issue_df.loc[i, 'change_date_time']
@@ -204,33 +214,43 @@ def build_time_in_status_chart(df):
     # Create a DataFrame from the results
     results_df = pd.DataFrame(results)
 
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", UserWarning)
+
     # Ensure the month column is in the correct format
-    results_df['month'] = pd.to_datetime(results_df['month']).dt.to_period('M').dt.to_timestamp()
+        results_df['month'] = pd.to_datetime(results_df['month'], errors='coerce').dt.to_period('M').dt.to_timestamp()
 
     # Filter to include only the past 12 months
     last_12_months = pd.date_range(end=datetime.now(), periods=12, freq='M').to_period('M').to_timestamp()
     results_df = results_df[results_df['month'].isin(last_12_months)]
 
     # Filter out items in the "Done" status group
-    results_df = results_df[results_df['category'] != 'Done']
+    results_df = results_df[(results_df['category'] != 'Done') & (results_df['category'].notna())]
 
     # Aggregate the data by issue, status, and month to calculate the total hours in status
-    results_df = results_df.groupby(['issue_id', 'status', 'month'])['hours_in_status'].sum().reset_index()
+    if toggle_status_category:
+        results_df = results_df.groupby(['issue_id', 'category', 'month'])['hours_in_status'].sum().reset_index()
+        # Convert hours to days with decimals
+        results_df['days_in_status'] = results_df['hours_in_status'] / 24.0
+        # Aggregate the data by month and category to calculate the average time in status
+        monthly_df = results_df.groupby(['month', 'category'])['days_in_status'].mean().reset_index()
+        color_field = 'category'
+    else:
+        results_df = results_df.groupby(['issue_id', 'status', 'month'])['hours_in_status'].sum().reset_index()
+        # Convert hours to days with decimals
+        results_df['days_in_status'] = results_df['hours_in_status'] / 24.0
+        # Aggregate the data by month and status to calculate the average time in status
+        monthly_df = results_df.groupby(['month', 'status'])['days_in_status'].mean().reset_index()
+        color_field = 'status'
 
-    # Convert hours to days with decimals
-    results_df['days_in_status'] = results_df['hours_in_status'] / 24.0
-
-    # Aggregate the data by month and status to calculate the average time in status
-    monthly_df = results_df.groupby(['month', 'status'])['days_in_status'].mean().reset_index()
-
-    # Create the bar chart
-    chart = alt.Chart(monthly_df).mark_bar(size=20).encode(
-        x=alt.X('month:T', title='Month'),
+    # Create the bar chart with wider bars
+    chart = alt.Chart(monthly_df).mark_bar(size=30).encode(
+        x=alt.X('month:T', title='Month', axis=alt.Axis(format='%b, %y')),
         y=alt.Y('mean(days_in_status):Q', title='Average Days'),
-        color='status:N',
+        color=f'{color_field}:N',
         tooltip=[
             alt.Tooltip('month:T', title='Month'),
-            alt.Tooltip('status:N', title='Status'),
+            alt.Tooltip(f'{color_field}:N', title='Status' if not toggle_status_category else 'Category'),
             alt.Tooltip('mean(days_in_status):Q', title='Average Days')
         ]
     ).properties(
