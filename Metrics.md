@@ -47,5 +47,6 @@ Dataset is then calculated to take dates for each assignment start, end or both 
 
 **Visual filtering:** Issue type (*Story, Bug*), Status Group (all *To Do, In Progress* statuses), Status (lowest status level as *Backlog, UAT, Ready*) 
 
-**Considerations:** Items in ***Done*** Status Group are excluded.  
-Months are represented as 12 months back from now. Date picker could be added to serve as stating date, so if Feb 1 is selected, it would show 12 months back from it up to Feb
+**Considerations:** Items in ***Done*** Status Group, as well in ***NaN*** *(when corresponding status group not found due to item brought in from different project with status not existing on project we are looking at)* are excluded.  
+Months are represented as 12 months back from now. Date picker could be added to serve as stating date, so if Feb 1 is selected, it would show 12 months back from it up to Feb  
+Time of issue in status is calculated in hours that are summarized and represented in days. Calculating full days between status change would increase value as some items might change several times within a day *(example of such behaviour -4778)*
