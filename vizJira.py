@@ -205,6 +205,7 @@ def build_time_in_status_chart(df, toggle_status_category, issue_types, status_c
                     'issue_id': issue_id,
                     'status': status,
                     'category': category,
+                    'issue_type_name': issue_df.loc[i, 'issue_type_name'],
                     'month': month_start,
                     'hours_in_status': hours_in_status
                 })
@@ -216,8 +217,7 @@ def build_time_in_status_chart(df, toggle_status_category, issue_types, status_c
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", UserWarning)
-
-    # Ensure the month column is in the correct format
+        # Ensure the month column is in the correct format
         results_df['month'] = pd.to_datetime(results_df['month'], errors='coerce').dt.to_period('M').dt.to_timestamp()
 
     # Filter to include only the past 12 months
@@ -229,14 +229,14 @@ def build_time_in_status_chart(df, toggle_status_category, issue_types, status_c
 
     # Aggregate the data by issue, status, and month to calculate the total hours in status
     if toggle_status_category:
-        results_df = results_df.groupby(['issue_id', 'category', 'month'])['hours_in_status'].sum().reset_index()
+        results_df = results_df.groupby(['issue_id', 'category', 'month', 'issue_type_name'])['hours_in_status'].sum().reset_index()
         # Convert hours to days with decimals
         results_df['days_in_status'] = results_df['hours_in_status'] / 24.0
         # Aggregate the data by month and category to calculate the average time in status
         monthly_df = results_df.groupby(['month', 'category'])['days_in_status'].mean().reset_index()
         color_field = 'category'
     else:
-        results_df = results_df.groupby(['issue_id', 'status', 'month'])['hours_in_status'].sum().reset_index()
+        results_df = results_df.groupby(['issue_id', 'status', 'month', 'issue_type_name'])['hours_in_status'].sum().reset_index()
         # Convert hours to days with decimals
         results_df['days_in_status'] = results_df['hours_in_status'] / 24.0
         # Aggregate the data by month and status to calculate the average time in status
@@ -259,4 +259,7 @@ def build_time_in_status_chart(df, toggle_status_category, issue_types, status_c
         height=400
     )
 
-    return chart
+    # Calculate the average time in status for each issue type
+    avg_time_in_status = results_df.groupby(['issue_type_name', color_field])['days_in_status'].mean().unstack().fillna(0)
+
+    return chart, avg_time_in_status
