@@ -74,4 +74,4 @@ with st.spinner('Recalculating chart...'):
     filtered_avg_time_in_status.index.name = "Issue Type"
     st.dataframe(filtered_avg_time_in_status)
 
-
+st.divider()
