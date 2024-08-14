@@ -2,6 +2,7 @@ import requests
 import sqlite3
 import json
 import streamlit as st
+import hashlib
 
 cacheTime = 900 # time to keep cache in seconds
 
@@ -410,8 +411,67 @@ def fetch_jira_sprints(the_project, jira_url, project_code, board_id, auth):
     conn.commit()
     conn.close()
 
+def issue_field_handling(field, value, sprint_field):
+    if field in ['assignee', 'reporter', 'creator']:
+        display_name = value.get('displayName', '') if value else ''
+        field_value = hashlib.blake2b(display_name.encode()).hexdigest() if display_name else 'None'
+    
+    if field == 'comment':
+        field_value = 'True' if value['total'] > 0 else 'False'
+        field = 'Commented'
+
+    if field == 'description':
+        field_value = 'Obfuscated'
+
+    if field == 'summary':
+        field_value = 'Obfuscated'
+    
+    if field == 'parent':
+        field_value = value.get('key', '') if value else ''
+
+    if field == sprint_field:
+        if isinstance(value, list):
+            field_value = ';'.join(str(item['id']) for item in value)
+        else:
+            field_value = str(value)
+
+    return field, field_value
+
+def issue_changelog_field_handling(field, item, sprint_field):
+    if field in ['assignee', 'reporter', 'creator']:
+    # potentially hash in future for some unique count per person metric or smth
+        from_string = item.get('fromString', '')
+        to_string = item.get('toString', '')
+        value_from = hashlib.blake2b(from_string.encode()).hexdigest() if from_string else 'None'
+        value_to = hashlib.blake2b(to_string.encode()).hexdigest() if to_string else 'None'
+
+    if field == 'comment':
+        value_from = 'Obfuscated'
+        value_to = 'Obfuscated'
+
+    if field == 'description':
+        value_from = f"Obfuscated, len:{len(item.get('fromString', ''))}" if item.get('fromString') else 'Obfuscated, len:0'
+        value_to = f"Obfuscated, len:{len(item.get('toString', ''))}" if item.get('toString') else 'Obfuscated, len:0'
+
+    if field == 'summary':
+        value_from = f"Obfuscated, len:{len(item.get('fromString', ''))}" if item.get('fromString') else 'Obfuscated, len:0'
+        value_to = f"Obfuscated, len:{len(item.get('toString', ''))}" if item.get('toString') else 'Obfuscated, len:0'
+
+    if field == 'parent':
+        value_from = item.get('fromString', '')
+        value_to = item.get('toString', '')
+    
+    if field == sprint_field:
+        value_from = item.get('from', '')
+        value_to = item.get('to', '')
+
+    return value_from, value_to
+
 # Function to get and store issues and changelog from Jira
-def fetch_jira_issues(the_project, jira_url, project_code, auth, board_id=None):
+def fetch_jira_issues(the_project, jira_url, project_code, auth, sprint_field, board_id=None):
+    spec_fields = ['assignee', 'reporter', 'creator', 'comment', 'description', 'summary', 'parent', sprint_field]
+    skip_fields = ['attachment']
+
     start_at = 0
     max_results = 100
 
@@ -478,9 +538,10 @@ def fetch_jira_issues(the_project, jira_url, project_code, auth, board_id=None):
             
             # Store latest fields
             for field, value in issue['fields'].items():
-                if field == 'comment':
-                    field_value = 'True' if value['total'] > 0 else 'False'
-                    field = 'Commented'
+                if field in skip_fields:
+                    continue
+                elif field in spec_fields:
+                   field, field_value = issue_field_handling(field, value, sprint_field)
                 else:
                     field_value = json.dumps(value) if isinstance(value, (list, dict)) else str(value)
                 
@@ -497,8 +558,13 @@ def fetch_jira_issues(the_project, jira_url, project_code, auth, board_id=None):
                     field = item['field']
                     field_type = item['fieldtype']
                     field_id = item.get('fieldId', '')
-                    value_from = item.get('fromString', '')
-                    value_to = item.get('toString', '')
+                    if field_id in skip_fields:
+                        continue
+                    elif field_id in spec_fields:
+                        value_from, value_to = issue_changelog_field_handling(field_id, item, sprint_field)
+                    else:
+                        value_from = item.get('fromString', '')
+                        value_to = item.get('toString', '')
                     
                     cursor.execute('''
                     INSERT INTO issue_changelog (

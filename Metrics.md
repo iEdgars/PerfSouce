@@ -34,7 +34,7 @@ WHERE ic.issue_status_cat_name = 'Done'
 GROUP BY ic.the_project, ic.jira_project, ic.issue_id, ic."key"
 ```
 
-**Considerations:** Taken are only items having InProgress. Some items that has a lot of changes are missing `expand=changelog` records, therefore missing date it went to **In Progress** and therfore is discarded in Cycle time calculations even though it was completed. **Possible option** in such cases to include Lead time when Cycle time is not available. *(example of such behaviour -3780)*
+**Considerations:** Taken are only items having InProgress. Some items that has a lot of changes are missing `expand=changelog` records, therefore missing date it went to **In Progress** and therfore is discarded in Cycle time calculations even though it was completed. **Possible option** in such cases to include Lead time when Cycle time is not available. *(example of such behaviour -3780)*  
 
 ### Time in Status by month:
 Show average time per each status or status group for items within the month.
@@ -49,4 +49,15 @@ Dataset is then calculated to take dates for each assignment start, end or both 
 
 **Considerations:** Items in ***Done*** Status Group, as well in ***NaN*** *(when corresponding status group not found due to item brought in from different project with status not existing on project we are looking at)* are excluded.  
 Months are represented as 12 months back from now. Date picker could be added to serve as stating date, so if Feb 1 is selected, it would show 12 months back from it up to Feb  
-Time of issue in status is calculated in hours that are summarized and represented in days. Calculating full days between status change would increase value as some items might change several times within a day *(example of such behaviour -4778)*
+Time of issue in status is calculated in hours that are summarized and represented in days. Calculating full days between status change would increase value as some items might change several times within a day *(example of such behaviour -4778)*  
+
+### Story Spillover:
+
+**Calclucation:** Tickets in **Done** state and their changes in Sprint assigment. Represented on Sprint it was closed.
+
+**Visual filtering:** Board id?
+
+**Considerations:**  
+- Sprint assignment must be within sprint timeframe
+- **Commited items only** - Periods without sprint assigment are not included. For example if issue was assigned to to *Sprint 9*, and finished to *Sprint 11*, but was never assigned to *Sprint 10*, would be considered as 2 sprints. Items tommited regardless of status (except in Done statuses) would be condidered included. e.g. if item was commited into Sprint's 9 as Ready; Sprint 10, it went though Ready > In Progress > Blocked; Sprint 11 Blocked > In Progress > Done; would be considered as **3+ sprints**.  
+- Not sure if `x axis` by sprints is really correct way for this visual, or would it better be monthly.

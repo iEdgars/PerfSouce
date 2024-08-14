@@ -255,6 +255,8 @@ Fields mapping impacts all metric calculations by Jira data in a project (e.g. v
 
         if st.button("Confirm"):
             st.session_state.jira_field_mapping = 'Completed'
+#❗need to change to selection:❗
+            sprint_field = 'customfield_10010'
 
 if st.session_state.jira_field_mapping == 'Completed':
     auth = st.session_state.auth
@@ -271,7 +273,7 @@ if st.session_state.jira_field_mapping == 'Completed':
             jira_data_bacth_bar.progress(int((en / len(board_ids)) * 50), text=f'Retrieving Sprint data for board {id}')
 
         jira_data_bacth_bar.progress(80, text='Retrieving Issue history')
-        perfJira.fetch_jira_issues(project, jira_url, project_key, auth, board_id)
+        perfJira.fetch_jira_issues(project, jira_url, project_key, auth, sprint_field, board_id)
         
         jira_data_bacth_bar.progress(100, text='Done!')
         st.session_state.jira_data_bacth2 = 'Completed'
