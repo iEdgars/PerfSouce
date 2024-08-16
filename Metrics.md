@@ -59,5 +59,5 @@ Time of issue in status is calculated in hours that are summarized and represent
 
 **Considerations:**  
 - Sprint assignment must be within sprint timeframe
-- **Commited items only** - Periods without sprint assigment are not included. For example if issue was assigned to to *Sprint 9*, and finished to *Sprint 11*, but was never assigned to *Sprint 10*, would be considered as 2 sprints. Items tommited regardless of status (except in Done statuses) would be condidered included. e.g. if item was commited into Sprint's 9 as Ready; Sprint 10, it went though Ready > In Progress > Blocked; Sprint 11 Blocked > In Progress > Done; would be considered as **3+ sprints**.  
+- **Commited items only** - Periods without sprint assigment are not included. For example if issue was assigned to to *Sprint 9*, and finished to *Sprint 11*, but was never assigned to *Sprint 10*, would be considered as 2 sprints. Items commited regardless of status (except in Done statuses) would be condidered included. e.g. if item was commited into Sprint's 9 as Ready; Sprint 10, it went though Ready > In Progress > Blocked; Sprint 11 Blocked > In Progress > Done; would be considered as **3+ sprints**.  
 - Not sure if `x axis` by sprints is really correct way for this visual, or would it better be monthly.
