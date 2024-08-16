@@ -369,8 +369,7 @@ def fetch_jira_sprints(the_project, jira_url, project_code, board_id, auth):
         start_date TEXT,
         end_date TEXT,
         complete_date TEXT,
-        origin_board_id INTEGER,
-        goal TEXT
+        origin_board_id INTEGER
     )
     ''')
     
@@ -395,13 +394,12 @@ def fetch_jira_sprints(the_project, jira_url, project_code, board_id, auth):
             end_date = sprint.get('endDate', '')
             complete_date = sprint.get('completeDate', '')
             origin_board_id = sprint['originBoardId']
-            goal = sprint.get('goal', '')
             
             cursor.execute('''
             INSERT INTO sprints (
-                the_project, jira_project, board_id, id, state, name, start_date, end_date, complete_date, origin_board_id, goal
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (the_project, project_code, board_id, sprint_id, state, name, start_date, end_date, complete_date, origin_board_id, goal))
+                the_project, jira_project, board_id, id, state, name, start_date, end_date, complete_date, origin_board_id
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (the_project, project_code, board_id, sprint_id, state, name, start_date, end_date, complete_date, origin_board_id))
         
         # Update pagination variables
         start_at += max_results
