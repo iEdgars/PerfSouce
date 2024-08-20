@@ -429,7 +429,7 @@ def issue_field_handling(field, value, sprint_field):
 
     if field == sprint_field:
         if isinstance(value, list):
-            field_value = ';'.join(str(item['id']) for item in value)
+            field_value = str(value[-1]['id'])  # Get the latest sprint id
         else:
             field_value = str(value)
 
@@ -460,8 +460,16 @@ def issue_changelog_field_handling(field, item, sprint_field):
         value_to = item.get('toString', '')
     
     if field == sprint_field:
-        value_from = item.get('from', '')
-        value_to = item.get('to', '')
+        if len(item.get('from', '').split(', ')) > len(item.get('to', '').split(', ')):
+            value_to = ''
+        else:
+            value_to = item.get('to', '').split(', ')[-1]  # Get the latest sprint id from the 'to' value
+        
+        if len(item.get('to', '').split(', ')) > len(item.get('from', '').split(', ')):
+            value_from = ''
+        else:
+            value_from = item.get('from', '').split(', ')[-1]  # Get the latest sprint id from the 'from' value
+        
 
     return value_from, value_to
 
