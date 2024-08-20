@@ -394,3 +394,22 @@ def build_time_in_status_chart__avg_time_in_status_adj(df, toggle_status_categor
     )
 
     return chart, avg_time_in_status
+
+@st.cache_data(ttl=cacheTime, show_spinner=False)
+def plot_spillover_chart(sprint_percentages):
+
+    # Melt the DataFrame for plotting
+    sprint_percentages = sprint_percentages.melt(id_vars=['value_to', 'name'], var_name='sprint_category', value_name='Percentage')
+
+    chart = alt.Chart(sprint_percentages).mark_bar().encode(
+        x=alt.X('name:N', title='Sprint'),
+        y=alt.Y('Percentage:Q', title='Percentage'),
+        color='sprint_category:N',
+        tooltip=['name:N', 'sprint_category:N', 'Percentage:Q']
+    ).properties(
+        title='Spillover by Sprints',
+        width=800,
+        height=400
+    )
+
+    return chart

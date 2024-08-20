@@ -202,3 +202,83 @@ def ttm_calculate_time_in_status():
     gc.collect()
 
     return combined_df
+
+@st.cache_data(ttl=cacheTime)
+def extract_spillover_data(board):
+    conn = sqlite3.connect('jira_projects.db')
+
+    sprints_query = '''
+    SELECT *
+    FROM sprints
+    WHERE state = 'closed'
+    ORDER BY board_id, id
+    '''
+    issues_query = '''
+    SELECT *
+    FROM issues
+    WHERE issue_status_cat_name = 'Done'
+    AND issue_status <> 'Rejected'
+    AND field = 'customfield_10010'
+    '''
+    changelog_query = '''
+    SELECT *
+    FROM issue_changelog
+    WHERE issue_status_cat_name = 'Done'
+    AND issue_status <> 'Rejected'
+    AND field LIKE 'Sprint'
+    '''
+
+    sprints_df = pd.read_sql_query(sprints_query, conn)
+    issues_df = pd.read_sql_query(issues_query, conn)
+    changelog_df = pd.read_sql_query(changelog_query, conn)
+
+    conn.close()
+
+    # Convert id to string
+    sprints_df['id'] = sprints_df['id'].astype(str)
+
+    # Convert end_date to datetime
+    sprints_df['end_date'] = pd.to_datetime(sprints_df['end_date'], errors='coerce')
+
+    sprints_df = sprints_df[sprints_df['board_id'] == board]
+
+    # Sort by end_date and select the last 12 sprints
+    sprints_df = sprints_df.sort_values(by='end_date', ascending=False).head(12)
+
+    return sprints_df, issues_df, changelog_df
+
+@st.cache_data(ttl=cacheTime)
+def calculate_spillover(board):
+    sprints_df, issues_df, changelog_df = extract_spillover_data(board)
+
+    # Ensure value_to in changelog_df is of type string
+    changelog_df['value_to'] = changelog_df['value_to'].astype(str)
+
+    # Filter changelog to only include entries for the last 12 sprints
+    changelog_df = changelog_df[changelog_df['value_to'].isin(sprints_df['id'])]
+
+    # Merge changelog with sprints to get sprint start and end dates
+    changelog_df = changelog_df.merge(sprints_df[['id', 'start_date', 'end_date']], left_on='value_to', right_on='id', how='left')
+
+    # Filter out records where the issue was unassigned before sprint start
+    changelog_df = changelog_df[~((changelog_df['change_date_time'] < changelog_df['start_date']) & (changelog_df['value_to'].isna()))]
+
+    # Calculate number of sprints each issue was in
+    changelog_df['num_sprints'] = changelog_df.groupby('issue_id')['value_to'].transform('nunique')
+
+    # Categorize issues based on number of sprints
+    changelog_df['sprint_category'] = pd.cut(changelog_df['num_sprints'], bins=[0, 1, 2, float('inf')], labels=['1 Sprint', '2 Sprints', '3+ Sprints'])
+
+    # Calculate the counts of issues closed in each sprint category per sprint
+    sprint_counts = changelog_df.groupby(['value_to', 'sprint_category'], observed=False).size().unstack(fill_value=0)
+
+    # Calculate the percentage of issues closed in each sprint category per sprint
+    sprint_percentages = sprint_counts.div(sprint_counts.sum(axis=1), axis=0) * 100
+
+    # Merge with sprints_df to get the sprint names
+    sprint_percentages = sprint_percentages.reset_index().merge(sprints_df[['id', 'name']], left_on='value_to', right_on='id', how='left')
+    # Drop the 'id' column as it's no longer needed
+    sprint_percentages = sprint_percentages.drop(columns=['id'])
+
+    return sprint_percentages
+
