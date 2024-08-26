@@ -77,6 +77,7 @@ st.title('Time to Market')
 # st.divider()
 
 st.title('Story Spillover')
-sprint_percentages = vizDataJira.calculate_spillover(258)
-spillover_chart = vizJira.plot_spillover_chart(sprint_percentages)
-st.altair_chart(spillover_chart)
+with st.spinner('Calculating Story Spillover...'):
+    sprint_percentages = vizDataJira.calculate_spillover(257)
+    spillover_chart = vizJira.plot_spillover_chart(sprint_percentages)
+    st.altair_chart(spillover_chart)

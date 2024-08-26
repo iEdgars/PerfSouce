@@ -399,7 +399,7 @@ def build_time_in_status_chart__avg_time_in_status_adj(df, toggle_status_categor
 def plot_spillover_chart(sprint_percentages):
 
     # Melt the DataFrame for plotting
-    sprint_percentages = sprint_percentages.melt(id_vars=['value_to', 'name'], var_name='sprint_category', value_name='Percentage')
+    sprint_percentages = sprint_percentages.melt(id_vars=['id', 'name'], var_name='sprint_category', value_name='Percentage')
 
     chart = alt.Chart(sprint_percentages).mark_bar().encode(
         x=alt.X('name:N', title='Sprint'),
