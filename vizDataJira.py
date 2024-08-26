@@ -226,6 +226,7 @@ def extract_spillover_data(board):
     FROM issue_changelog
     WHERE issue_status_cat_name = 'Done'
     AND issue_status <> 'Rejected'
+    AND issue_type_name <> 'Epic'
     AND field LIKE 'Sprint'
     '''
 
