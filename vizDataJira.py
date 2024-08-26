@@ -4,6 +4,7 @@ import streamlit as st
 import gc
 from datetime import datetime
 
+
 cacheTime = 900 # time to keep cache in seconds
 
 # Function to get Lead time data
@@ -285,14 +286,24 @@ def determine_value_to__for_calculate_spillover(row, df):
 
 @st.cache_data(ttl=cacheTime)
 def calculate_spillover(board):
-    sprints_df, issues_df, changelog_df = extract_spillover_data(board)
 
+## debug    
+    start_time = datetime.now()
+
+    sprints_df, issues_df, changelog_df = extract_spillover_data(board)
+## debug
+    interim = datetime.now()
+    print('extract_spillover_data', f'From start:{(datetime.now() - start_time)}', f'Interim: {datetime.now() - interim}')
+    
     # Merge changelog with sprints to get sprint start and end dates
     changelog_df = changelog_df.merge(sprints_df[['id', 'start_date', 'end_date']], left_on='value_to', right_on='id', how='left')
     # Filter out records where the issue was unassigned before sprint start
     changelog_df = changelog_df[~((changelog_df['change_date_time'] < changelog_df['start_date']) & (changelog_df['value_to'].isna()))]
     # Track the periods during which an issue was assigned to a sprint
     changelog_df['assigned_during_sprint'] = (changelog_df['change_date_time'] >= changelog_df['start_date']) & (changelog_df['change_date_time'] <= changelog_df['end_date'])
+## debug
+    print("changelog_df['assigned_during_sprint'] =", f'From start:{(datetime.now() - start_time)}', f'Interim: {datetime.now() - interim}')
+    interim = datetime.now()
 
     # Ensure change_date_time, start_date, and end_date are datetime
     changelog_df['change_date_time'] = pd.to_datetime(changelog_df['change_date_time'], utc=True, errors='coerce')
@@ -300,9 +311,15 @@ def calculate_spillover(board):
     changelog_df['end_date'] = pd.to_datetime(changelog_df['end_date'], utc=True, errors='coerce')
     # Sort by issue_id and change_date_time
     changelog_df.sort_values(by=['issue_id', 'change_date_time'], inplace=True)
+## debug
+    print("changelog_df.sort_values()", f'From start:{(datetime.now() - start_time)}', f'Interim: {datetime.now() - interim}')
+    interim = datetime.now()
 
     # Apply the function to each row
     changelog_df['is_value_to_equal_id'] = changelog_df.apply(lambda row: determine_value_to__for_calculate_spillover(row, changelog_df), axis=1)
+## debug
+    print("changelog_df['is_value_to_equal_id']", f'From start:{(datetime.now() - start_time)}', f'Interim: {datetime.now() - interim}')
+    interim = datetime.now()
 
     # Calculate number of unique sprints each issue was in based on is_value_to_equal_id being True
     changelog_df['num_sprints'] = changelog_df[changelog_df['is_value_to_equal_id']].groupby('issue_id')['value_to'].transform('nunique').astype(int)
@@ -310,6 +327,9 @@ def calculate_spillover(board):
     changelog_df['sprint_category'] = pd.cut(changelog_df['num_sprints'], bins=[0, 1, 2, float('inf')], labels=['1 Sprint', '2 Sprints', '3+ Sprints'])
     # Sort the DataFrame by 'change_date_time'
     changelog_df.sort_values(by=['issue_id', 'change_date_time'], inplace=True)
+## debug
+    print("changelog_df.sort_values()2", f'From start:{(datetime.now() - start_time)}', f'Interim: {datetime.now() - interim}')
+    interim = datetime.now()
 
     # Filter rows where is_value_to_equal_id is True and value_to is not null
     changelog_df = changelog_df[(changelog_df['is_value_to_equal_id']) & (changelog_df['value_to'].notna())]
@@ -317,19 +337,31 @@ def calculate_spillover(board):
     changelog_df = changelog_df.sort_values(by=['issue_id', 'change_date_time'], ascending=[True, False])
     # Drop duplicates to keep the latest change_date_time for each issue_id
     changelog_df = changelog_df.drop_duplicates(subset=['issue_id'], keep='first')
+## debug
+    print("changelog_df.drop_duplicates()", f'From start:{(datetime.now() - start_time)}', f'Interim: {datetime.now() - interim}')
+    interim = datetime.now()
 
     # Calculate the counts of issues closed in each sprint category per sprint
     sprint_counts = changelog_df.groupby(['id', 'sprint_category'], observed=False).size().unstack(fill_value=0)
     # Calculate the percentage of issues closed in each sprint category per sprint
     sprint_percentages = sprint_counts.div(sprint_counts.sum(axis=1), axis=0) * 100
-
+## debug
+    print("sprint_percentages", f'From start:{(datetime.now() - start_time)}', f'Interim: {datetime.now() - interim}')
+    interim = datetime.now()
+    
     # Sort by end_date and select the last 12 sprints
     sprints_df = sprints_df.sort_values(by='end_date', ascending=False).head(12)
+## debug
+    print("sprints_df.sort_values().head(12)", f'From start:{(datetime.now() - start_time)}', f'Interim: {datetime.now() - interim}')
+    interim = datetime.now()
 
     # Merge with sprints_df to get the sprint names
     sprints_df['id'] = sprints_df['id'].astype(str)
     # sprint_counts['id'] = sprint_counts['id'].astype(str)
     sprint_percentages = sprint_percentages.reset_index().merge(sprints_df[['id', 'name']], left_on='id', right_on='id', how='left')
+## debug
+    print("sprint_percentages.reset_index().merge()", f'From start:{(datetime.now() - start_time)}', f'Interim: {datetime.now() - interim}')
+    interim = datetime.now()
 
     # Filter out older sprints (rows where 'name' is NaN)
     sprint_percentages = sprint_percentages.dropna(subset=['name'])
@@ -342,6 +374,9 @@ def calculate_spillover(board):
 
     # Run garbage collector to free up memory
     gc.collect()
+## debug
+    print("GC", f'From start:{(datetime.now() - start_time)}', f'Interim: {datetime.now() - interim}')
+    interim = datetime.now()
 
     return sprint_percentages
 
