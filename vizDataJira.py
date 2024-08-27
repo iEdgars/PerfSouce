@@ -115,7 +115,7 @@ def ttm_transform_and_join_dataframes(df_issues, df_first_in_progress):
 
     return merged_df
 
-# Funtion to get latest 
+# Funtion to get latest status
 @st.cache_data(ttl=cacheTime)
 def ttm_calculate_time_in_status():
 
@@ -204,6 +204,7 @@ def ttm_calculate_time_in_status():
 
     return combined_df
 
+# Funtion to extract and pre-manipulate data for spillover
 @st.cache_data(ttl=cacheTime)
 def extract_spillover_data(board):
     conn = sqlite3.connect('jira_projects.db')
@@ -254,7 +255,7 @@ def extract_spillover_data(board):
     return sprints_df, issues_df, changelog_df
 
 # Function to determine if value_to was equal to id during the period for calculate_spillover funtion
-@st.cache_data(ttl=cacheTime)
+@st.cache_data(ttl=cacheTime, show_spinner=False)
 def determine_value_to__for_calculate_spillover(row, df):
     issue_id = row['issue_id']
     start_date = row['start_date']
@@ -284,7 +285,7 @@ def determine_value_to__for_calculate_spillover(row, df):
     
     return False
 
-@st.cache_data(ttl=cacheTime)
+@st.cache_data(ttl=cacheTime, show_spinner=False)
 def calculate_spillover(board):
     sprints_df, issues_df, changelog_df = extract_spillover_data(board)
     
