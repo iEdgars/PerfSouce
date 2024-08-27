@@ -205,7 +205,7 @@ def ttm_calculate_time_in_status():
     return combined_df
 
 # Funtion to extract and pre-manipulate data for spillover
-@st.cache_data(ttl=cacheTime)
+@st.cache_data(ttl=cacheTime, show_spinner=False)
 def extract_spillover_data(board):
     conn = sqlite3.connect('jira_projects.db')
 
