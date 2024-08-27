@@ -423,3 +423,27 @@ def plot_spillover_chart(sprint_percentages):
     )
 
     return bar_chart, pie_chart
+
+# Display the average number of sprint spillover in a KPI card
+def display_average_sprints_spillover_kpi(average_sprints):
+    card_css = """
+    <style>
+    .card {
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        padding: 10px;
+        margin: 5px;
+        text-align: center;
+    }
+    .card h3 {
+        margin: 0;
+        font-size: 1.2em;
+    }
+    .card h2 {
+        margin: 0;
+        font-size: 2em;
+    }
+    </style>
+    """
+    st.markdown(card_css, unsafe_allow_html=True)
+    st.markdown(f"<div class='card'><h3>Average Number of Sprints</h3><h2>{average_sprints:.1f}</h2></div>", unsafe_allow_html=True)

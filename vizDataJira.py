@@ -336,6 +336,9 @@ def calculate_spillover(board):
     # Filter out older sprints (rows where 'name' is NaN)
     sprint_percentages = sprint_percentages.dropna(subset=['name'])
 
+    # Add average calculation at the end of calculate_spillover function
+    average_sprints = changelog_df['num_sprints'].mean()
+
     # Clear unnecessary DataFrames
     del changelog_df
     del sprints_df
@@ -345,5 +348,5 @@ def calculate_spillover(board):
     # Run garbage collector to free up memory
     gc.collect()
 
-    return sprint_percentages
+    return sprint_percentages, average_sprints
 
