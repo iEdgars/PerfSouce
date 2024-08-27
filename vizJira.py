@@ -397,19 +397,29 @@ def build_time_in_status_chart__avg_time_in_status_adj(df, toggle_status_categor
 
 @st.cache_data(ttl=cacheTime, show_spinner=False)
 def plot_spillover_chart(sprint_percentages):
-
     # Melt the DataFrame for plotting
-    sprint_percentages = sprint_percentages.melt(id_vars=['id', 'name'], var_name='sprint_category', value_name='Percentage')
+    sprint_percentages = sprint_percentages.melt(id_vars=['id', 'name'], var_name='Sprint Category', value_name='Percentage')
 
-    chart = alt.Chart(sprint_percentages).mark_bar().encode(
+    # Bar Chart
+    bar_chart = alt.Chart(sprint_percentages).mark_bar().encode(
         x=alt.X('name:N', title='Sprint'),
         y=alt.Y('Percentage:Q', title='Percentage'),
-        color='sprint_category:N',
-        tooltip=['name:N', 'sprint_category:N', 'Percentage:Q']
+        color=alt.Color('Sprint Category:N', title='Sprint Category'),
+        tooltip=[alt.Tooltip('name:N', title='Sprint'), 'Sprint Category:N', 'Percentage:Q']
     ).properties(
         title='Spillover by Sprints',
         width=800,
         height=400
     )
 
-    return chart
+    # Pie Chart
+    pie_data = sprint_percentages.groupby('Sprint Category')['Percentage'].sum().reset_index()
+    pie_chart = alt.Chart(pie_data).mark_arc().encode(
+        theta=alt.Theta(field='Percentage', type='quantitative'),
+        color=alt.Color(field='Sprint Category', type='nominal', title='Sprint Category'),
+        tooltip=['Sprint Category:N', 'Percentage:Q']
+    ).properties(
+        title='Spillover Distribution'
+    )
+
+    return bar_chart, pie_chart
