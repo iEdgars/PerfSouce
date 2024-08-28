@@ -250,9 +250,12 @@ def extract_spillover_data(board):
     sprints_df = sprints_df[sprints_df['board_id'] == board]
 
     # Sort by end_date and select the last 12 sprints
+    latest_sprints_df = sprints_df.sort_values(by='end_date', ascending=False).head(12)
+
+    # Sort by end_date and select the last 12 sprints
     # sprints_df = sprints_df.sort_values(by='end_date', ascending=False).head(12)
 
-    return sprints_df, issues_df, changelog_df
+    return sprints_df, issues_df, changelog_df, latest_sprints_df
 
 # Function to determine if value_to was equal to id during the period for calculate_spillover funtion
 @st.cache_data(ttl=cacheTime, show_spinner=False)
@@ -287,7 +290,7 @@ def determine_value_to__for_calculate_spillover(row, df):
 
 @st.cache_data(ttl=cacheTime, show_spinner=False)
 def calculate_spillover(board):
-    sprints_df, issues_df, changelog_df = extract_spillover_data(board)
+    sprints_df, issues_df, changelog_df, latest_sprints_df = extract_spillover_data(board)
     
     # Merge changelog with sprints to get sprint start and end dates
     changelog_df = changelog_df.merge(sprints_df[['id', 'start_date', 'end_date']], left_on='value_to', right_on='id', how='left')
@@ -325,18 +328,11 @@ def calculate_spillover(board):
     # Calculate the percentage of issues closed in each sprint category per sprint
     sprint_percentages = sprint_counts.div(sprint_counts.sum(axis=1), axis=0) * 100
     
-    # Sort by end_date and select the last 12 sprints
-    sprints_df = sprints_df.sort_values(by='end_date', ascending=False).head(12)
-
-    # Merge with sprints_df to get the sprint names
-    sprints_df['id'] = sprints_df['id'].astype(str)
-    # sprint_counts['id'] = sprint_counts['id'].astype(str)
-    sprint_percentages = sprint_percentages.reset_index().merge(sprints_df[['id', 'name']], left_on='id', right_on='id', how='left')
-
-    # Filter out older sprints (rows where 'name' is NaN)
-    sprint_percentages = sprint_percentages.dropna(subset=['name'])
-
+    # Limiting to latest 12 Sprints
+    sprint_percentages = sprint_percentages.reset_index().merge(latest_sprints_df[['id', 'name']], left_on='id', right_on='id', how='inner')
+    
     # Add average calculation at the end of calculate_spillover function
+##❗ Calculation requires review
     average_sprints = changelog_df['num_sprints'].mean()
 
     # Clear unnecessary DataFrames
