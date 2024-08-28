@@ -330,7 +330,7 @@ def calculate_spillover(board):
     
     # Limiting to latest 12 Sprints
     sprint_percentages = sprint_percentages.reset_index().merge(latest_sprints_df[['id', 'name']], left_on='id', right_on='id', how='inner')
-    changelog_df = changelog_df.reset_index().merge(latest_sprints_df['id'], left_on='id', right_on='id', how='inner')
+    changelog_df = changelog_df[changelog_df['id'].astype(str).isin(latest_sprints_df['id'])]
     
     # Add average calculation at the end of calculate_spillover function
     average_sprints = changelog_df['num_sprints'].mean()
