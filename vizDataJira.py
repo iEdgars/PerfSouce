@@ -324,6 +324,16 @@ def calculate_spillover(board):
     changelog_df = changelog_df.sort_values(by=['issue_id', 'change_date_time'], ascending=[True, False])
     # Drop duplicates to keep the latest change_date_time for each issue_id
     changelog_df = changelog_df.drop_duplicates(subset=['issue_id'], keep='first')
+    
+    # Rename columns in issues_df
+    issues_df.rename(columns={'field': 'field_id', 'field_value': 'value_to'}, inplace=True)
+    # Add necessary columns to issues_df in a single line
+    issues_df = issues_df.assign(id=issues_df['value_to'], num_sprints=1.0, sprint_category='1 Sprint')
+
+    # Append issues_df to changelog_df using pd.concat
+    changelog_df = pd.concat([changelog_df, issues_df], ignore_index=True)
+    # Limit to latest sprints
+    changelog_df = changelog_df[changelog_df['id'].astype(str).isin(latest_sprints_df['id'])]
 
     # Calculate the counts of issues closed in each sprint category per sprint
     sprint_counts = changelog_df.groupby(['id', 'sprint_category'], observed=False).size().unstack(fill_value=0)
@@ -332,7 +342,6 @@ def calculate_spillover(board):
     
     # Limiting to latest 12 Sprints
     sprint_percentages = sprint_percentages.reset_index().merge(latest_sprints_df[['id', 'name']], left_on='id', right_on='id', how='inner')
-    changelog_df = changelog_df[changelog_df['id'].astype(str).isin(latest_sprints_df['id'])]
     
     # Add average calculation at the end of calculate_spillover function
     average_sprints = changelog_df['num_sprints'].mean()
