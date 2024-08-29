@@ -251,9 +251,11 @@ def extract_spillover_data(board):
 
     # Sort by end_date and select the last 12 sprints
     latest_sprints_df = sprints_df.sort_values(by='end_date', ascending=False).head(12)
-
-    # Sort by end_date and select the last 12 sprints
-    # sprints_df = sprints_df.sort_values(by='end_date', ascending=False).head(12)
+    
+    # Limiting issues_df to only items that has no Sprint change
+    issues_df = issues_df[~issues_df['issue_id'].isin(changelog_df['issue_id'])]
+    # Limiting issues_df to only items in latest 12 sprints
+    issues_df = issues_df[issues_df['field_value'].astype(str).isin(latest_sprints_df['id'])]
 
     return sprints_df, issues_df, changelog_df, latest_sprints_df
 
