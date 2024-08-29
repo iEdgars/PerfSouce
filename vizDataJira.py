@@ -291,7 +291,7 @@ def determine_value_to__for_calculate_spillover(row, df):
     return False
 
 @st.cache_data(ttl=cacheTime, show_spinner=False)
-def calculate_spillover(board):
+def calculate_spillover(board, detailed = False):
     sprints_df, issues_df, changelog_df, latest_sprints_df = extract_spillover_data(board)
     
     # Merge changelog with sprints to get sprint start and end dates
@@ -314,7 +314,12 @@ def calculate_spillover(board):
     # Calculate number of unique sprints each issue was in based on is_value_to_equal_id being True
     changelog_df['num_sprints'] = changelog_df[changelog_df['is_value_to_equal_id']].groupby('issue_id')['value_to'].transform('nunique').astype(int)
     # Categorize issues based on number of sprints
-    changelog_df['sprint_category'] = pd.cut(changelog_df['num_sprints'], bins=[0, 1, 2, float('inf')], labels=['1 Sprint', '2 Sprints', '3+ Sprints'])
+    if detailed:
+        # Fill NaN values with 0 or any default value before converting to integers
+        changelog_df['sprint_category'] = changelog_df['num_sprints'].fillna(0).apply(lambda x: f'{int(x)} Sprint' if x == 1 else f'{int(x)} Sprints')
+    else:
+        # Categorize issues based on number of sprints
+        changelog_df['sprint_category'] = pd.cut(changelog_df['num_sprints'], bins=[0, 1, 2, float('inf')], labels=['1 Sprint', '2 Sprints', '3+ Sprints'])
     # Sort the DataFrame by 'change_date_time'
     changelog_df.sort_values(by=['issue_id', 'change_date_time'], inplace=True)
 

@@ -80,8 +80,11 @@ st.divider()
 ## Story Spillover
 st.title('Story Spillover')
 col1, col2, col3 = st.columns([5,3,2], vertical_alignment="bottom")
+# Toggle for detailed view
+toggle_detailed_spillover = col1.toggle("Show all Spirnts", value=False)
+
 with st.spinner('Calculating Story Spillover...'):
-    sprint_percentages, average_sprints = vizDataJira.calculate_spillover(257)
+    sprint_percentages, average_sprints = vizDataJira.calculate_spillover(257, toggle_detailed_spillover)
     bar_chart, pie_chart = vizJira.plot_spillover_chart(sprint_percentages)
     col1.altair_chart(bar_chart)
     col2.altair_chart(pie_chart)
