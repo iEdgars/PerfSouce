@@ -258,7 +258,7 @@ def extract_spillover_data(board):
     return sprints_df, issues_df, changelog_df, latest_sprints_df
 
 # Function to determine if value_to was equal to id during the period for calculate_spillover funtion
-@st.cache_data(ttl=cacheTime, show_spinner=False)
+# @st.cache_data(ttl=cacheTime, show_spinner=False) #! Do not cache as it add's 2 minutes to this funtion.
 def determine_value_to__for_calculate_spillover(row, df):
     issue_id = row['issue_id']
     start_date = row['start_date']
