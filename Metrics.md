@@ -20,6 +20,7 @@ WHERE field IN('resolutiondate', 'created')
 
 ### Epic/Story Cycle Time (days):
 Date to show on graph based on date Epic/Story is completed. Any non-completed items are excluded.  
+
 **Calclucation:** `Date completed - First "In Progress" date`, data limited to 365 days based on resolution date
 ```
 SELECT ic.the_project, ic.jira_project, ic.issue_id, ic."key", MIN(ic.change_date_time) first_in_progress
@@ -52,6 +53,8 @@ Months are represented as 12 months back from now. Date picker could be added to
 Time of issue in status is calculated in hours that are summarized and represented in days. Calculating full days between status change would increase value as some items might change several times within a day *(example of such behaviour -4778)*  
 
 ### Story Spillover:
+
+
 
 **Calclucation:** Tickets in **Done** state and their changes in Sprint assigment. Represented on Sprint it was closed. Mainly `issue_changelog` used to determine how many sprints issue was assigned to exporting issues that are already **Done**, then determining if sprint was assigned within Sprint, or before Sprint and stayed until Sprint started.
 Afterwords, comparing with `issues` table for all **Done** items in `issues` with Sprint value that are not in `issue_changelog`. Means such issues were assigned with Sprint upon creation and completed within 1 Sprint.
