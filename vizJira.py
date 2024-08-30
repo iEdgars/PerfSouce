@@ -395,21 +395,82 @@ def build_time_in_status_chart__avg_time_in_status_adj(df, toggle_status_categor
 
     return chart, avg_time_in_status
 
+# Functions to build spillover
+
+@st.cache_data(ttl=cacheTime, show_spinner=False)
+def get_spillover_boards():
+    import sqlite3
+    conn = sqlite3.connect('jira_projects.db')
+
+    sprints_boards_query = '''
+    SELECT DISTINCT board_id
+    FROM sprints
+    WHERE state = 'closed'
+    '''
+    board_name_query='''
+    SELECT *
+	FROM boards
+    '''
+
+    sprints_boards_df = pd.read_sql_query(sprints_boards_query, conn)
+    boards_df = pd.read_sql_query(board_name_query, conn)
+
+    conn.close()
+
+    # Limit to latest sprints
+    boards_df = boards_df[boards_df['id'].isin(sprints_boards_df['board_id'])]
+
+    return boards_df
+
 @st.cache_data(ttl=cacheTime, show_spinner=False)
 def plot_spillover_chart(sprint_percentages):
-
     # Melt the DataFrame for plotting
-    sprint_percentages = sprint_percentages.melt(id_vars=['id', 'name'], var_name='sprint_category', value_name='Percentage')
+    sprint_percentages = sprint_percentages.melt(id_vars=['id', 'name'], var_name='Sprint Category', value_name='Percentage')
 
-    chart = alt.Chart(sprint_percentages).mark_bar().encode(
+    # Bar Chart
+    bar_chart = alt.Chart(sprint_percentages).mark_bar().encode(
         x=alt.X('name:N', title='Sprint'),
         y=alt.Y('Percentage:Q', title='Percentage'),
-        color='sprint_category:N',
-        tooltip=['name:N', 'sprint_category:N', 'Percentage:Q']
+        color=alt.Color('Sprint Category:N', title='Sprint Category'),
+        tooltip=[alt.Tooltip('name:N', title='Sprint'), 'Sprint Category:N', 'Percentage:Q']
     ).properties(
         title='Spillover by Sprints',
         width=800,
         height=400
     )
 
-    return chart
+    # Pie Chart
+    pie_data = sprint_percentages.groupby('Sprint Category')['Percentage'].sum().reset_index()
+    pie_chart = alt.Chart(pie_data).mark_arc().encode(
+        theta=alt.Theta(field='Percentage', type='quantitative'),
+        color=alt.Color(field='Sprint Category', type='nominal', title='Sprint Category'),
+        tooltip=['Sprint Category:N', 'Percentage:Q']
+    ).properties(
+        title='Spillover Distribution'
+    )
+
+    return bar_chart, pie_chart
+
+# Display the average number of sprint spillover in a KPI card
+def display_average_sprints_spillover_kpi(average_sprints):
+    card_css = """
+    <style>
+    .card {
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        padding: 10px;
+        margin: 5px;
+        text-align: center;
+    }
+    .card h3 {
+        margin: 0;
+        font-size: 1.2em;
+    }
+    .card h2 {
+        margin: 0;
+        font-size: 2em;
+    }
+    </style>
+    """
+    st.markdown(card_css, unsafe_allow_html=True)
+    st.markdown(f"<div class='card'><h3>Average Number of Sprints</h3><h2>{average_sprints:.1f}</h2></div>", unsafe_allow_html=True)

@@ -83,7 +83,7 @@ if st.session_state.auth is not None and st.session_state.board is None:
         st.session_state.project = (selected_project_id, selected_project_key, selected_project_name)
        
         # Fetch all Boards for the selected project
-        boards = perfJira.fetch_jira_boards(jira_url, auth)
+        boards = perfJira.fetch_jira_boards(project, jira_url, selected_project_key, auth)
         board_ids = [board['id'] for board in boards if board.get('location', {}).get('projectKey') == selected_project_key]
         selected_board_option = "Use whole Project"
 

@@ -4,6 +4,7 @@ import streamlit as st
 import gc
 from datetime import datetime
 
+
 cacheTime = 900 # time to keep cache in seconds
 
 # Function to get Lead time data
@@ -114,7 +115,7 @@ def ttm_transform_and_join_dataframes(df_issues, df_first_in_progress):
 
     return merged_df
 
-# Funtion to get latest 
+# Funtion to get latest status
 @st.cache_data(ttl=cacheTime)
 def ttm_calculate_time_in_status():
 
@@ -203,7 +204,8 @@ def ttm_calculate_time_in_status():
 
     return combined_df
 
-@st.cache_data(ttl=cacheTime)
+# Funtion to extract and pre-manipulate data for spillover
+@st.cache_data(ttl=cacheTime, show_spinner=False)
 def extract_spillover_data(board):
     conn = sqlite3.connect('jira_projects.db')
 
@@ -248,12 +250,17 @@ def extract_spillover_data(board):
     sprints_df = sprints_df[sprints_df['board_id'] == board]
 
     # Sort by end_date and select the last 12 sprints
-    # sprints_df = sprints_df.sort_values(by='end_date', ascending=False).head(12)
+    latest_sprints_df = sprints_df.sort_values(by='end_date', ascending=False).head(12)
+    
+    # Limiting issues_df to only items that has no Sprint change
+    issues_df = issues_df[~issues_df['issue_id'].isin(changelog_df['issue_id'])]
+    # Limiting issues_df to only items in latest 12 sprints
+    issues_df = issues_df[issues_df['field_value'].astype(str).isin(latest_sprints_df['id'])]
 
-    return sprints_df, issues_df, changelog_df
+    return sprints_df, issues_df, changelog_df, latest_sprints_df
 
 # Function to determine if value_to was equal to id during the period for calculate_spillover funtion
-@st.cache_data(ttl=cacheTime)
+# @st.cache_data(ttl=cacheTime, show_spinner=False) #! Do not cache as it add's 2 minutes to this funtion.
 def determine_value_to__for_calculate_spillover(row, df):
     issue_id = row['issue_id']
     start_date = row['start_date']
@@ -283,10 +290,10 @@ def determine_value_to__for_calculate_spillover(row, df):
     
     return False
 
-@st.cache_data(ttl=cacheTime)
-def calculate_spillover(board):
-    sprints_df, issues_df, changelog_df = extract_spillover_data(board)
-
+@st.cache_data(ttl=cacheTime, show_spinner=False)
+def calculate_spillover(board, detailed = False):
+    sprints_df, issues_df, changelog_df, latest_sprints_df = extract_spillover_data(board)
+    
     # Merge changelog with sprints to get sprint start and end dates
     changelog_df = changelog_df.merge(sprints_df[['id', 'start_date', 'end_date']], left_on='value_to', right_on='id', how='left')
     # Filter out records where the issue was unassigned before sprint start
@@ -307,7 +314,12 @@ def calculate_spillover(board):
     # Calculate number of unique sprints each issue was in based on is_value_to_equal_id being True
     changelog_df['num_sprints'] = changelog_df[changelog_df['is_value_to_equal_id']].groupby('issue_id')['value_to'].transform('nunique').astype(int)
     # Categorize issues based on number of sprints
-    changelog_df['sprint_category'] = pd.cut(changelog_df['num_sprints'], bins=[0, 1, 2, float('inf')], labels=['1 Sprint', '2 Sprints', '3+ Sprints'])
+    if detailed:
+        # Fill NaN values with 0 or any default value before converting to integers
+        changelog_df['sprint_category'] = changelog_df['num_sprints'].fillna(0).apply(lambda x: f'{int(x)} Sprint' if x == 1 else f'{int(x)} Sprints')
+    else:
+        # Categorize issues based on number of sprints
+        changelog_df['sprint_category'] = pd.cut(changelog_df['num_sprints'], bins=[0, 1, 2, float('inf')], labels=['1 Sprint', '2 Sprints', '3+ Sprints'])
     # Sort the DataFrame by 'change_date_time'
     changelog_df.sort_values(by=['issue_id', 'change_date_time'], inplace=True)
 
@@ -317,22 +329,27 @@ def calculate_spillover(board):
     changelog_df = changelog_df.sort_values(by=['issue_id', 'change_date_time'], ascending=[True, False])
     # Drop duplicates to keep the latest change_date_time for each issue_id
     changelog_df = changelog_df.drop_duplicates(subset=['issue_id'], keep='first')
+    
+    # Rename columns in issues_df
+    issues_df.rename(columns={'field': 'field_id', 'field_value': 'value_to'}, inplace=True)
+    # Add necessary columns to issues_df in a single line
+    issues_df = issues_df.assign(id=issues_df['value_to'], num_sprints=1.0, sprint_category='1 Sprint')
+
+    # Append issues_df to changelog_df using pd.concat
+    changelog_df = pd.concat([changelog_df, issues_df], ignore_index=True)
+    # Limit to latest sprints
+    changelog_df = changelog_df[changelog_df['id'].astype(str).isin(latest_sprints_df['id'])]
 
     # Calculate the counts of issues closed in each sprint category per sprint
     sprint_counts = changelog_df.groupby(['id', 'sprint_category'], observed=False).size().unstack(fill_value=0)
     # Calculate the percentage of issues closed in each sprint category per sprint
     sprint_percentages = sprint_counts.div(sprint_counts.sum(axis=1), axis=0) * 100
-
-    # Sort by end_date and select the last 12 sprints
-    sprints_df = sprints_df.sort_values(by='end_date', ascending=False).head(12)
-
-    # Merge with sprints_df to get the sprint names
-    sprints_df['id'] = sprints_df['id'].astype(str)
-    # sprint_counts['id'] = sprint_counts['id'].astype(str)
-    sprint_percentages = sprint_percentages.reset_index().merge(sprints_df[['id', 'name']], left_on='id', right_on='id', how='left')
-
-    # Filter out older sprints (rows where 'name' is NaN)
-    sprint_percentages = sprint_percentages.dropna(subset=['name'])
+    
+    # Limiting to latest 12 Sprints
+    sprint_percentages = sprint_percentages.reset_index().merge(latest_sprints_df[['id', 'name']], left_on='id', right_on='id', how='inner')
+    
+    # Add average calculation at the end of calculate_spillover function
+    average_sprints = changelog_df['num_sprints'].mean()
 
     # Clear unnecessary DataFrames
     del changelog_df
@@ -343,5 +360,5 @@ def calculate_spillover(board):
     # Run garbage collector to free up memory
     gc.collect()
 
-    return sprint_percentages
+    return sprint_percentages, average_sprints
 

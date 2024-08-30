@@ -32,16 +32,59 @@ def fetch_jira_projects(jira_url, auth):
 
 # Function to get all boards from Jira Agile and store in SQLite
 @st.cache_data(ttl=cacheTime)
-def fetch_jira_boards(jira_url, auth):
+def fetch_jira_boards(the_project, jira_url, project_code, auth):
     start_at = 0
     max_results = 50
     boards = []
-    while True:
-        response = requests.get(f"{jira_url}/rest/agile/latest/board", auth=auth, params={'startAt': start_at, 'maxResults': max_results}).json()
-        boards.extend(response['values'])
-        if response['isLast']:
-            break
-        start_at += max_results
+
+    # Connect to SQLite database (or create it)
+    conn = sqlite3.connect('jira_projects.db')
+    cursor = conn.cursor()
+
+    # Create table if not exists
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS boards (
+        the_project TEXT,
+        jira_project TEXT,
+        id INTEGER,
+        name TEXT,
+        type TEXT,
+        location_projectId INTEGER,
+        location_projectKey TEXT
+    )
+    ''')
+
+    try:
+        while True:
+            response = requests.get(f"{jira_url}/rest/agile/latest/board", auth=auth, params={'startAt': start_at, 'maxResults': max_results}).json()
+            boards.extend(response['values'])
+
+            # Insert data into table if the_project and project_code are provided
+            for board in response['values']:
+                location = board.get('location', {})
+                location_projectKey = location.get('projectKey', None)
+
+                # Only insert if projectKey matches project_code
+                if location_projectKey == project_code:
+                    board_id = board['id']
+                    board_name = board['name']
+                    board_type = board['type']
+                    location_projectId = location.get('projectId', None)
+
+                    cursor.execute('''
+                    INSERT INTO boards (
+                        the_project, jira_project, id, name, type, location_projectId, location_projectKey
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                    ''', (the_project, project_code, board_id, board_name, board_type, location_projectId, location_projectKey))
+
+            if response['isLast']:
+                break
+            start_at += max_results
+
+    finally:
+        # Commit and close connection
+        conn.commit()
+        conn.close()
 
     return boards
 
