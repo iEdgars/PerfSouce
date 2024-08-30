@@ -103,19 +103,12 @@ Items taken are not Rejected and not Epic's
 #  
 # Throughput / Productivity
 
-### # of Story points released per month:
-The total number of {Story Points}, {Stories}, {Epic's} delivered by the team within one month; indicates the team's productivity.  
+### # of {Story Points}, {Stories}, {Epic's} released per month:
+The total number of {Story Points}, {Stories}, {Epic's} delivered by the team within one month.
+*Should be same approach for all 3 visuals, only selecting different base ({Story Points}, {Stories}, {Epic's}) for calculation*
 
 **Calclucation:**  
+  
 **Visual filtering:**  
-**Considerations:**  
-
-### # of Story released per month:
-**Calclucation:**  
-**Visual filtering:**  
-**Considerations:**  
-
-### # of Epics released per month:
-**Calclucation:**  
-**Visual filtering:**  
+  
 **Considerations:**  
