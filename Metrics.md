@@ -4,6 +4,7 @@
 
 ### Epic/Story Lead Time (days):
 Date to show on graph based on date Epic/Story is completed. Any non-completed items are excluded.  
+
 **Calclucation:** `Date completed - Date created`, data limited to 365 days based on resolution date
 ```
 SELECT *
@@ -38,7 +39,8 @@ GROUP BY ic.the_project, ic.jira_project, ic.issue_id, ic."key"
 **Considerations:** Taken are only items having InProgress. Some items that has a lot of changes are missing `expand=changelog` records, therefore missing date it went to **In Progress** and therfore is discarded in Cycle time calculations even though it was completed. **Possible option** in such cases to include Lead time when Cycle time is not available. *(example of such behaviour -3780)*  
 
 ### Time in Status by month:
-Show average time per each status or status group for items within the month.
+Show average time per each status or status group for items within the month.  
+
 **Calclucation:** `vizDataJira.ttm_calculate_time_in_status()` exports all status changes from `issue_changelog` adding row for creation date for time in first status and row of today's date for time between latest change for current status.  
 Dataset is then calculated to take dates for each assignment start, end or both within the month. **Time In Status** then is calculated as difference between: 
 - `Status End - Status Start` - When Status started and ended within the month
@@ -53,7 +55,6 @@ Months are represented as 12 months back from now. Date picker could be added to
 Time of issue in status is calculated in hours that are summarized and represented in days. Calculating full days between status change would increase value as some items might change several times within a day *(example of such behaviour -4778)*  
 
 ### Story Spillover:
-
 
 
 **Calclucation:** Tickets in **Done** state and their changes in Sprint assigment. Represented on Sprint it was closed. Mainly `issue_changelog` used to determine how many sprints issue was assigned to exporting issues that are already **Done**, then determining if sprint was assigned within Sprint, or before Sprint and stayed until Sprint started.
