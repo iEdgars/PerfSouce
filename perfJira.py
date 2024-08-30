@@ -25,13 +25,13 @@ def confirm_connection(jira_url, username, api_key):
         return False
     
 # Function to get all Projects from Jira provide for selection
-@st.cache_data(ttl=cacheTime)
+@st.cache_data(ttl=cacheTime, show_spinner=False)
 def fetch_jira_projects(jira_url, auth):
     data = requests.get(f"{jira_url}/rest/api/latest/project", auth=auth).json()
     return data
 
 # Function to get all boards from Jira Agile and store in SQLite
-@st.cache_data(ttl=cacheTime)
+@st.cache_data(ttl=cacheTime, show_spinner=False)
 def fetch_jira_boards(the_project, jira_url, project_code, auth):
     start_at = 0
     max_results = 50
@@ -629,3 +629,20 @@ def fetch_jira_issues(the_project, jira_url, project_code, auth, sprint_field, b
     # Commit and close connection
     conn.commit()
     conn.close()
+
+# Determine Sprint field
+@st.cache_data(ttl=cacheTime, show_spinner=False)
+def get_Sprint_field():
+    conn = sqlite3.connect('jira_projects.db')
+
+    sprint_field_query = '''
+    SELECT field_id
+    FROM field_selections
+    WHERE metric_attribute = 'Sprint'
+    '''
+    cursor = conn.cursor()
+    # Execute the query and fetch the result
+    cursor.execute(sprint_field_query)
+    sprint_field = cursor.fetchone()[0]
+
+    return sprint_field
