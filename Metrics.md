@@ -56,7 +56,7 @@ Time of issue in status is calculated in hours that are summarized and represent
 **Calclucation:** Tickets in **Done** state and their changes in Sprint assigment. Represented on Sprint it was closed. Mainly `issue_changelog` used to determine how many sprints issue was assigned to exporting issues that are already **Done**, then determining if sprint was assigned within Sprint, or before Sprint and stayed until Sprint started.
 Afterwords, comparing with `issues` table for all **Done** items in `issues` with Sprint value that are not in `issue_changelog`. Means such issues were assigned with Sprint upon creation and completed within 1 Sprint.
 ```
-sprints_query = '''
+	sprints_query = '''
     SELECT *
     FROM sprints
     WHERE state = 'closed'
