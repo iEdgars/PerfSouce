@@ -65,12 +65,12 @@ status_category_filter = col5.selectbox("Select Status Category", options=status
 with st.spinner('Recalculating chart...'):
     col1, col2 = st.columns([4,3])
     # Build and display the chart
-    chart, avg_time_in_status = vizJira.build_time_in_status_chart(tisc, toggle_status_category, issue_types, status_category_filter)
-    # chart = vizJira.build_time_in_status_chart(tisc, toggle_status_category, issue_types, status_category_filter)[0]
+    chart = vizJira.build_time_in_status_chart(tisc, toggle_status_category, issue_types, status_category_filter)[0]
     col1.altair_chart(chart, use_container_width=True)
 
     # Display the average time in status table for "Story" and "Epic"
     st.subheader('Average Time in Status by Issue Type')
+    avg_time_in_status = vizJira.build_time_in_status_chart(tisc, toggle_status_category, [], status_category_filter)[1]
     filtered_avg_time_in_status = avg_time_in_status.loc[["Story", "Epic"]].round(1)
     filtered_avg_time_in_status.index.name = "Issue Type"
     st.dataframe(filtered_avg_time_in_status)
