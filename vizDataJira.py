@@ -208,6 +208,10 @@ def ttm_calculate_time_in_status():
 @st.cache_data(ttl=cacheTime, show_spinner=False)
 def extract_spillover_data(board):
     conn = sqlite3.connect('jira_projects.db')
+    
+    #Get Sprint field
+    from perfJira import get_Sprint_field
+    sprint_field = get_Sprint_field()
 
     sprints_query = '''
     SELECT *
@@ -215,21 +219,21 @@ def extract_spillover_data(board):
     WHERE state = 'closed'
     ORDER BY board_id, id
     '''
-    issues_query = '''
+    issues_query = f'''
     SELECT *
     FROM issues
     WHERE issue_status_cat_name = 'Done'
     AND issue_status <> 'Rejected'
     AND issue_type_name <> 'Epic'
-    AND field = 'customfield_10010'
+    AND field = '{sprint_field}'
     '''
-    changelog_query = '''
+    changelog_query = f'''
     SELECT *
     FROM issue_changelog
     WHERE issue_status_cat_name = 'Done'
     AND issue_status <> 'Rejected'
     AND issue_type_name <> 'Epic'
-    AND field LIKE 'Sprint'
+    AND field_id = '{sprint_field}'
     '''
 
     sprints_df = pd.read_sql_query(sprints_query, conn)

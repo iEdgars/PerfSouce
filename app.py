@@ -180,15 +180,11 @@ Fields mapping impacts all metric calculations by Jira data in a project (e.g. v
     name_to_key = dict(zip(fields_df['name'], fields_df['key']))
     key_to_name = dict(zip(fields_df['key'], fields_df['name']))
 
-    # Metric attributes
+        # Metric attributes
     metric_attributes = [
-        "Estimation in Story Points", 
-        "Estimation in Original Hours", 
-        "Sprint", 
-        "Epic", 
-        "Affected release", 
-        "Fixed release", 
-        "Severity", 
+        "Estimation in Story Points",
+        "Sprint",
+        "Epic",
         "Priority"
     ]
 
@@ -256,7 +252,7 @@ Fields mapping impacts all metric calculations by Jira data in a project (e.g. v
         if st.button("Confirm"):
             st.session_state.jira_field_mapping = 'Completed'
 #❗need to change to selection:❗
-            sprint_field = 'customfield_10010'
+            sprint_field = perfJira.get_Sprint_field()
 
 if st.session_state.jira_field_mapping == 'Completed':
     auth = st.session_state.auth
