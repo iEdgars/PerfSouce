@@ -53,9 +53,37 @@ Time of issue in status is calculated in hours that are summarized and represent
 
 ### Story Spillover:
 
-**Calclucation:** Tickets in **Done** state and their changes in Sprint assigment. Represented on Sprint it was closed.
+**Calclucation:** Tickets in **Done** state and their changes in Sprint assigment. Represented on Sprint it was closed. Mainly `issue_changelog` used to determine how many sprints issue was assigned to exporting issues that are already **Done**, then determining if sprint was assigned within Sprint, or before Sprint and stayed until Sprint started.
+Afterwords, comparing with `issues` table for all **Done** items in `issues` with Sprint value that are not in `issue_changelog`. Means such issues were assigned with Sprint upon creation and completed within 1 Sprint.
+```
+sprints_query = '''
+    SELECT *
+    FROM sprints
+    WHERE state = 'closed'
+    ORDER BY board_id, id
+    '''
+    issues_query = f'''
+    SELECT *
+    FROM issues
+    WHERE issue_status_cat_name = 'Done'
+    AND issue_status <> 'Rejected'
+    AND issue_type_name <> 'Epic'
+    AND field = '{sprint_field}'
+    '''
+    changelog_query = f'''
+    SELECT *
+    FROM issue_changelog
+    WHERE issue_status_cat_name = 'Done'
+    AND issue_status <> 'Rejected'
+    AND issue_type_name <> 'Epic'
+    AND field_id = '{sprint_field}'
+    '''
+```
 
-**Visual filtering:** Board id; Change between list of sprints vs **3+ Sprints**
+**Visual filtering:** 
+- Board id; 
+- Change between list of sprints vs **3+ Sprints**, 
+- Sprints limites to latest 12 Sprints
 
 **Considerations:**  
 - Sprint assignment must be within sprint timeframe
@@ -66,3 +94,16 @@ Time of issue in status is calculated in hours that are summarized and represent
 # Throughput / Productivity
 
 ### # of Story points released per month:
+**Calclucation:** 
+**Visual filtering:** 
+**Considerations:**  
+
+### # of Story released per month:
+**Calclucation:** 
+**Visual filtering:** 
+**Considerations:**  
+
+### # of Epics released per month:
+**Calclucation:** 
+**Visual filtering:** 
+**Considerations:**  
