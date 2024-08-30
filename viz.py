@@ -79,12 +79,25 @@ st.divider()
 
 ## Story Spillover
 st.title('Story Spillover')
-col1, col2, col3 = st.columns([5,3,2], vertical_alignment="bottom")
-# Toggle for detailed view
-toggle_detailed_spillover = col1.toggle("Show all Spirnts", value=False)
 
+# Fetch the DataFrame
+boards_df = vizJira.get_spillover_boards()
+# Extract names and IDs
+board_names = boards_df['name'].tolist()
+board_ids = boards_df['id'].tolist()
+
+col1, col2 = st.columns([2,8], vertical_alignment="center")
+# Create a selectbox with preselected name
+selected_name = col1.selectbox("Select a Board", board_names, index=board_names.index(boards_df.loc[boards_df['id'].idxmin(), 'name']))
+# Get the corresponding ID for the selected name
+selected_id = boards_df.loc[boards_df['name'] == selected_name, 'id'].values[0]
+
+# Toggle for detailed view
+toggle_detailed_spillover = col1.toggle("Show full sprint lengh", value=False)
+
+col1, col2, col3 = st.columns([5,3,2], vertical_alignment="center")
 with st.spinner('Calculating Story Spillover...'):
-    sprint_percentages, average_sprints = vizDataJira.calculate_spillover(257, toggle_detailed_spillover)
+    sprint_percentages, average_sprints = vizDataJira.calculate_spillover(selected_id, toggle_detailed_spillover)
     bar_chart, pie_chart = vizJira.plot_spillover_chart(sprint_percentages)
     col1.altair_chart(bar_chart)
     col2.altair_chart(pie_chart)

@@ -395,6 +395,33 @@ def build_time_in_status_chart__avg_time_in_status_adj(df, toggle_status_categor
 
     return chart, avg_time_in_status
 
+# Functions to build spillover
+
+@st.cache_data(ttl=cacheTime, show_spinner=False)
+def get_spillover_boards():
+    import sqlite3
+    conn = sqlite3.connect('jira_projects.db')
+
+    sprints_boards_query = '''
+    SELECT DISTINCT board_id
+    FROM sprints
+    WHERE state = 'closed'
+    '''
+    board_name_query='''
+    SELECT *
+	FROM boards
+    '''
+
+    sprints_boards_df = pd.read_sql_query(sprints_boards_query, conn)
+    boards_df = pd.read_sql_query(board_name_query, conn)
+
+    conn.close()
+
+    # Limit to latest sprints
+    boards_df = boards_df[boards_df['id'].isin(sprints_boards_df['board_id'])]
+
+    return boards_df
+
 @st.cache_data(ttl=cacheTime, show_spinner=False)
 def plot_spillover_chart(sprint_percentages):
     # Melt the DataFrame for plotting
