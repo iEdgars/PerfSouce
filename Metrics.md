@@ -63,4 +63,6 @@ Time of issue in status is calculated in hours that are summarized and represent
 - Not sure if `x axis` by sprints is really correct way for this visual, or would it better be monthly.  
   
 #  
-# Throughput / Productivity 
+# Throughput / Productivity
+
+### # of Story points released per month:
