@@ -48,17 +48,21 @@ Dataset is then calculated to take dates for each assignment start, end or both 
 - `Month End - Status Start` - When Status started in current month and has not ended will end of month
 - `Month End - Month Start` - When Status started in previous month and has not ended will end of month
 
-**Visual filtering:** Issue type (*Story, Bug*), Status Group (all *To Do, In Progress* statuses), Status (lowest status level as *Backlog, UAT, Ready*) 
+**Visual filtering:** 
+- Issue type (*Story, Bug*)
+- Status Group (all *To Do, In Progress* statuses)
+- Status (lowest status level as *Backlog, UAT, Ready*) 
 
 **Considerations:** Items in ***Done*** Status Group, as well in ***NaN*** *(when corresponding status group not found due to item brought in from different project with status not existing on project we are looking at)* are excluded.  
 Months are represented as 12 months back from now. Date picker could be added to serve as stating date, so if Feb 1 is selected, it would show 12 months back from it up to Feb  
 Time of issue in status is calculated in hours that are summarized and represented in days. Calculating full days between status change would increase value as some items might change several times within a day *(example of such behaviour -4778)*  
 
 ### Story Spillover:
-
+Indicates the avg number of sprints required to complete the development of a user story.
 
 **Calclucation:** Tickets in **Done** state and their changes in Sprint assigment. Represented on Sprint it was closed. Mainly `issue_changelog` used to determine how many sprints issue was assigned to exporting issues that are already **Done**, then determining if sprint was assigned within Sprint, or before Sprint and stayed until Sprint started.
-Afterwords, comparing with `issues` table for all **Done** items in `issues` with Sprint value that are not in `issue_changelog`. Means such issues were assigned with Sprint upon creation and completed within 1 Sprint.
+Afterwords, comparing with `issues` table for all **Done** items in `issues` with Sprint value that are not in `issue_changelog`. Means such issues were assigned with Sprint upon creation and completed within 1 Sprint.  
+Items taken are not Rejected and not Epic's  
 ```
 	sprints_query = '''
     SELECT *
@@ -85,14 +89,16 @@ Afterwords, comparing with `issues` table for all **Done** items in `issues` wit
 ```
 
 **Visual filtering:** 
-- Board id; 
-- Change between list of sprints vs **3+ Sprints**, 
+- Board. *As Sprints are board based category, for project with multiple boards we need to select single board.*
+- Toggle to change between list of sprints vs **3+ Sprints** (*3+ Sprints* vs *3 Sprints, 4 Sprints, etc.* in slices/legend)
 - Sprints limites to latest 12 Sprints
 
 **Considerations:**  
-- Sprint assignment must be within sprint timeframe
-- **Commited items only** - Periods without sprint assigment are not included. For example if issue was assigned to to *Sprint 9*, and finished to *Sprint 11*, but was never assigned to *Sprint 10*, would be considered as 2 sprints. Items commited regardless of status (except in Done statuses) would be condidered included. e.g. if item was commited into Sprint's 9 as Ready; Sprint 10, it went though Ready > In Progress > Blocked; Sprint 11 Blocked > In Progress > Done; would be considered as **3+ sprints**.  
-- Not sure if `x axis` by sprints is really correct way for this visual, or would it better be monthly.  
+1. Sprint assignment must be within sprint timeframe
+2. **Commited items only** - Periods without sprint assigment are not included. For example if issue was assigned to to *Sprint 9*, and finished to *Sprint 11*, but was never assigned to *Sprint 10*, would be considered as 2 sprints. Items commited regardless of status (except in Done statuses) would be condidered included. e.g. if item was commited into Sprint's 9 as Ready; Sprint 10, it went though Ready > In Progress > Blocked; Sprint 11 Blocked > In Progress > Done; would be considered as **3+ sprints**.  
+3. As Sprints are board based category, for project with multiple boards we need to select single board. If Sprint naming is simmilar between boards, this could be dynamically grouped into single barchart or represented as 2 bar-charts next to each other.
+4. Not sure if `x axis` by sprints is really correct way for this visual, or would it better be monthly. As well Montly would solve grouping for above item **#3.** in considerations
+5. Should this include Bug's and Spikes or only Stories as issue type
   
 #  
 # Throughput / Productivity
