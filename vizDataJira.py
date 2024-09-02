@@ -383,24 +383,16 @@ def extract_released_data(board):
     WHERE state = 'closed'
     ORDER BY board_id, id
     '''
-    issues_query = f'''
-    SELECT *
+    issues_query = '''
+    SELECT "the_project", "jira_project", "issue_id", "key", "field_value" AS "resolution_date", "issue_type_name", "issue_status"
     FROM issues
     WHERE issue_status_cat_name = 'Done'
     AND issue_status <> 'Rejected'
     AND issue_type_name IN('Story','Epic')
-    AND field = '{sprint_field}'
-    '''
-    changelog_query = f'''
-    SELECT *
-    FROM issue_changelog
-    WHERE issue_status_cat_name = 'Done'
-    AND issue_status <> 'Rejected'
-    AND issue_type_name IN('Story','Epic')
-    AND field_id = '{sprint_field}'
+	AND field = 'resolutiondate'
     '''
     issues_SP_query = f'''
-    SELECT *
+    SELECT "the_project", "jira_project", "issue_id", "key", "field_value" AS "story_points", "issue_type_name", "issue_status"
     FROM issues
     WHERE issue_status_cat_name = 'Done'
     AND issue_status <> 'Rejected'
@@ -410,15 +402,12 @@ def extract_released_data(board):
 
     sprints_df = pd.read_sql_query(sprints_query, conn)
     issues_df = pd.read_sql_query(issues_query, conn)
-    changelog_df = pd.read_sql_query(changelog_query, conn)
     issues_SP_df = pd.read_sql_query(issues_SP_query, conn)
 
     conn.close()
 
     # Convert id to string
     sprints_df['id'] = sprints_df['id'].astype(str)
-    # Ensure value_to in changelog_df is of type string
-    changelog_df['value_to'] = changelog_df['value_to'].astype(str)
 
     # Convert to datetime
     sprints_df['end_date'] = pd.to_datetime(sprints_df['end_date'], errors='coerce')
@@ -426,12 +415,14 @@ def extract_released_data(board):
 
     sprints_df = sprints_df[sprints_df['board_id'] == board]
 
-    # Sort by end_date and select the last 12 sprints
-    latest_sprints_df = sprints_df.sort_values(by='end_date', ascending=False).head(12)
-    
-    # Limiting issues_df to only items that has no Sprint change
-    issues_df = issues_df[~issues_df['issue_id'].isin(changelog_df['issue_id'])]
-    # Limiting issues_df to only items in latest 12 sprints
-    issues_df = issues_df[issues_df['field_value'].astype(str).isin(latest_sprints_df['id'])]
+    issues_df['resolution_date'] = pd.to_datetime(issues_df['resolution_date'], errors='coerce', utc=True)
+    # left join to add Story Points to issues_df
+    issues_df = issues_df.merge(issues_SP_df[['issue_id', 'story_points']], on='issue_id', how='left')
 
-    return sprints_df, issues_df, changelog_df, latest_sprints_df, issues_SP_df
+    # Filter issues_df to include only the latest full 12 months
+    today = pd.Timestamp.today(tz='UTC')
+    start_date = (today - pd.DateOffset(months=12)).replace(day=1)
+    end_date = today.replace(day=1) - pd.DateOffset(days=1)
+    issues_df = issues_df[(issues_df['resolution_date'] >= start_date) & (issues_df['resolution_date'] <= end_date)]
+
+    return sprints_df, issues_df
