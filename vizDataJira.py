@@ -210,8 +210,8 @@ def extract_spillover_data(board):
     conn = sqlite3.connect('jira_projects.db')
     
     #Get Sprint field
-    from perfJira import get_Sprint_field
-    sprint_field = get_Sprint_field()
+    from perfJira import get_field
+    sprint_field = get_field('Sprint')
 
     sprints_query = '''
     SELECT *
@@ -366,3 +366,72 @@ def calculate_spillover(board, detailed = False):
 
     return sprint_percentages, average_sprints
 
+## Throughput / Productivity
+# Funtion to extract and pre-manipulate data for spillover
+@st.cache_data(ttl=cacheTime, show_spinner=False)
+def extract_released_data(board):
+    conn = sqlite3.connect('jira_projects.db')
+    
+    #Get Sprint field
+    from perfJira import get_field
+    sprint_field = get_field('Sprint')
+    SP_field = get_field('Estimation in Story Points')
+
+    sprints_query = '''
+    SELECT *
+    FROM sprints
+    WHERE state = 'closed'
+    ORDER BY board_id, id
+    '''
+    issues_query = f'''
+    SELECT *
+    FROM issues
+    WHERE issue_status_cat_name = 'Done'
+    AND issue_status <> 'Rejected'
+    AND issue_type_name IN('Story','Epic')
+    AND field = '{sprint_field}'
+    '''
+    changelog_query = f'''
+    SELECT *
+    FROM issue_changelog
+    WHERE issue_status_cat_name = 'Done'
+    AND issue_status <> 'Rejected'
+    AND issue_type_name IN('Story','Epic')
+    AND field_id = '{sprint_field}'
+    '''
+    issues_SP_query = f'''
+    SELECT *
+    FROM issues
+    WHERE issue_status_cat_name = 'Done'
+    AND issue_status <> 'Rejected'
+    AND issue_type_name = 'Story'
+    AND field = '{SP_field}'
+    '''
+
+    sprints_df = pd.read_sql_query(sprints_query, conn)
+    issues_df = pd.read_sql_query(issues_query, conn)
+    changelog_df = pd.read_sql_query(changelog_query, conn)
+    issues_SP_df = pd.read_sql_query(issues_SP_query, conn)
+
+    conn.close()
+
+    # Convert id to string
+    sprints_df['id'] = sprints_df['id'].astype(str)
+    # Ensure value_to in changelog_df is of type string
+    changelog_df['value_to'] = changelog_df['value_to'].astype(str)
+
+    # Convert to datetime
+    sprints_df['end_date'] = pd.to_datetime(sprints_df['end_date'], errors='coerce')
+    sprints_df['start_date'] = pd.to_datetime(sprints_df['start_date'], errors='coerce')
+
+    sprints_df = sprints_df[sprints_df['board_id'] == board]
+
+    # Sort by end_date and select the last 12 sprints
+    latest_sprints_df = sprints_df.sort_values(by='end_date', ascending=False).head(12)
+    
+    # Limiting issues_df to only items that has no Sprint change
+    issues_df = issues_df[~issues_df['issue_id'].isin(changelog_df['issue_id'])]
+    # Limiting issues_df to only items in latest 12 sprints
+    issues_df = issues_df[issues_df['field_value'].astype(str).isin(latest_sprints_df['id'])]
+
+    return sprints_df, issues_df, changelog_df, latest_sprints_df, issues_SP_df
