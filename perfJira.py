@@ -2,6 +2,7 @@ import requests
 import sqlite3
 import json
 import streamlit as st
+from typing import Literal
 import hashlib
 
 cacheTime = 900 # time to keep cache in seconds
@@ -630,19 +631,19 @@ def fetch_jira_issues(the_project, jira_url, project_code, auth, sprint_field, b
     conn.commit()
     conn.close()
 
-# Determine Sprint field
+# Determine user mapped field
 @st.cache_data(ttl=cacheTime, show_spinner=False)
-def get_Sprint_field():
+def get_field(field: Literal['Sprint','Estimation in Story Points']):
     conn = sqlite3.connect('jira_projects.db')
 
-    sprint_field_query = '''
+    field_query = f'''
     SELECT field_id
     FROM field_selections
-    WHERE metric_attribute = 'Sprint'
+    WHERE metric_attribute = '{field}'
     '''
     cursor = conn.cursor()
     # Execute the query and fetch the result
-    cursor.execute(sprint_field_query)
-    sprint_field = cursor.fetchone()[0]
+    cursor.execute(field_query)
+    the_field = cursor.fetchone()[0]
 
-    return sprint_field
+    return the_field
