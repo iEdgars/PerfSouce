@@ -8,6 +8,9 @@ import warnings
 
 cacheTime = 600 # time to keep cache in seconds
 
+# Suppress the specific warning about dropping timezone information
+warnings.filterwarnings("ignore", message="Converting to PeriodArray/Index representation will drop timezone information.")
+
 # Define thresholds
 def get_color(the_time, issue_type, metric_type):
     RAG_scale = {
@@ -474,3 +477,64 @@ def display_average_sprints_spillover_kpi(average_sprints):
     """
     st.markdown(card_css, unsafe_allow_html=True)
     st.markdown(f"<div class='card'><h3>Average Number of Sprints</h3><h2>{average_sprints:.1f}</h2></div>", unsafe_allow_html=True)
+
+## Throughput / Productivity
+# Funtion to display release barcharts
+@st.cache_data(ttl=cacheTime, show_spinner=False)
+def plot_release_metrics(issues_df, chart_type):
+    # Extract month and year from resolution_date
+    issues_df['month_year'] = issues_df['resolution_date'].dt.to_period('M')
+
+    theTitle = '# of {} released per Month'
+
+    if chart_type == 'story_points':
+        # Ensuring story_points is numeric
+        issues_df['story_points'] = pd.to_numeric(issues_df['story_points'], errors='coerce')
+        
+        # Group by month_year and sum the story points
+        metrics_df = issues_df[issues_df['issue_type_name'] == 'Story'].groupby('month_year').agg({'story_points': 'sum'}).reset_index()
+        metrics_df['month_year'] = metrics_df['month_year'].dt.to_timestamp()
+        # title = '# of Story Points released per Month'
+        title = theTitle.format('Story Points')
+        y_axis = 'story_points:Q'
+        y_title = 'Sum of Story Points'
+    elif chart_type == 'num_stories':
+        # Group by month_year and count the number of stories
+        metrics_df = issues_df[issues_df['issue_type_name'] == 'Story'].groupby('month_year').agg({'issue_id': 'count'}).reset_index()
+        metrics_df['month_year'] = metrics_df['month_year'].dt.to_timestamp()
+        title = theTitle.format('Stories')
+        y_axis = 'issue_id:Q'
+        y_title = 'Number of Stories'
+    elif chart_type == 'num_epics':
+        # Group by month_year and count the number of epics
+        metrics_df = issues_df[issues_df['issue_type_name'] == 'Epic'].groupby('month_year').agg({'issue_id': 'count'}).reset_index()
+        metrics_df['month_year'] = metrics_df['month_year'].dt.to_timestamp()
+        title = theTitle.format('Epics')
+        y_axis = 'issue_id:Q'
+        y_title = 'Number of Epics'
+    else:
+        raise ValueError("Invalid chart_type. Choose from 'story_points', 'num_stories', or 'num_epics'.")
+
+    # Create the bar chart
+    base = alt.Chart(metrics_df).encode(
+        x=alt.X('month_year:T', title='Month', axis=alt.Axis(format='%b, %y')),
+        y=alt.Y(y_axis, title=y_title),
+        tooltip=['month_year:T', y_axis]
+    )
+
+    bars = base.mark_bar(size=20)
+
+    # Create the trendline
+    trendline = base.transform_regression('month_year', y_axis.split(':')[0]).mark_line(
+        strokeDash=[5, 5],
+        color='gray'
+    )
+
+    # Combine the bar chart and the trendline
+    chart = (bars + trendline).properties(
+        title=title,
+        width=800,
+        height=400
+    )
+
+    return chart

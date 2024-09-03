@@ -113,4 +113,4 @@ The total number of {Story Points}, {Stories}, {Epic's} delivered by the team wi
   
 **Considerations:**  
 1. It takes latest **Sprint** for issue and latest **Story points** assigned to the ticket. For higher accuracy, it could be re-built, to take only **Story point** value valid at resolution date, in case it was changed after resolution. As well, this has ***Latest* Spint**, so it would not consider anything delivered if item was reopened and assigned to later sprint. Only later sprint would be considered for this metric.
-
+2. **RAG** range is not added. Depends a lot on Project or team size, hence should be detemined by Trend or deviation from recent 

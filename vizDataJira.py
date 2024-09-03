@@ -367,7 +367,7 @@ def calculate_spillover(board, detailed = False):
     return sprint_percentages, average_sprints
 
 ## Throughput / Productivity
-# Funtion to extract and pre-manipulate data for spillover
+# Funtion to extract and pre-manipulate data for released mertics
 @st.cache_data(ttl=cacheTime, show_spinner=False)
 def extract_released_data():
     conn = sqlite3.connect('jira_projects.db')
