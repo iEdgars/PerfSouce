@@ -369,20 +369,13 @@ def calculate_spillover(board, detailed = False):
 ## Throughput / Productivity
 # Funtion to extract and pre-manipulate data for spillover
 @st.cache_data(ttl=cacheTime, show_spinner=False)
-def extract_released_data(board):
+def extract_released_data():
     conn = sqlite3.connect('jira_projects.db')
     
     #Get Sprint field
     from perfJira import get_field
-    sprint_field = get_field('Sprint')
     SP_field = get_field('Estimation in Story Points')
 
-    sprints_query = '''
-    SELECT *
-    FROM sprints
-    WHERE state = 'closed'
-    ORDER BY board_id, id
-    '''
     issues_query = '''
     SELECT "the_project", "jira_project", "issue_id", "key", "field_value" AS "resolution_date", "issue_type_name", "issue_status"
     FROM issues
@@ -400,20 +393,10 @@ def extract_released_data(board):
     AND field = '{SP_field}'
     '''
 
-    sprints_df = pd.read_sql_query(sprints_query, conn)
     issues_df = pd.read_sql_query(issues_query, conn)
     issues_SP_df = pd.read_sql_query(issues_SP_query, conn)
 
     conn.close()
-
-    # Convert id to string
-    sprints_df['id'] = sprints_df['id'].astype(str)
-
-    # Convert to datetime
-    sprints_df['end_date'] = pd.to_datetime(sprints_df['end_date'], errors='coerce')
-    sprints_df['start_date'] = pd.to_datetime(sprints_df['start_date'], errors='coerce')
-
-    sprints_df = sprints_df[sprints_df['board_id'] == board]
 
     issues_df['resolution_date'] = pd.to_datetime(issues_df['resolution_date'], errors='coerce', utc=True)
     # left join to add Story Points to issues_df
@@ -425,4 +408,4 @@ def extract_released_data(board):
     end_date = today.replace(day=1) - pd.DateOffset(days=1)
     issues_df = issues_df[(issues_df['resolution_date'] >= start_date) & (issues_df['resolution_date'] <= end_date)]
 
-    return sprints_df, issues_df
+    return issues_df
