@@ -252,7 +252,7 @@ Fields mapping impacts all metric calculations by Jira data in a project (e.g. v
         if st.button("Confirm"):
             st.session_state.jira_field_mapping = 'Completed'
 #❗need to change to selection:❗
-            sprint_field = perfJira.get_Sprint_field()
+            sprint_field = perfJira.get_field('Sprint')
 
 if st.session_state.jira_field_mapping == 'Completed':
     auth = st.session_state.auth

@@ -210,8 +210,8 @@ def extract_spillover_data(board):
     conn = sqlite3.connect('jira_projects.db')
     
     #Get Sprint field
-    from perfJira import get_Sprint_field
-    sprint_field = get_Sprint_field()
+    from perfJira import get_field
+    sprint_field = get_field('Sprint')
 
     sprints_query = '''
     SELECT *
@@ -366,3 +366,46 @@ def calculate_spillover(board, detailed = False):
 
     return sprint_percentages, average_sprints
 
+## Throughput / Productivity
+# Funtion to extract and pre-manipulate data for released mertics
+@st.cache_data(ttl=cacheTime, show_spinner=False)
+def extract_released_data():
+    conn = sqlite3.connect('jira_projects.db')
+    
+    #Get Sprint field
+    from perfJira import get_field
+    SP_field = get_field('Estimation in Story Points')
+
+    issues_query = '''
+    SELECT "the_project", "jira_project", "issue_id", "key", "field_value" AS "resolution_date", "issue_type_name", "issue_status"
+    FROM issues
+    WHERE issue_status_cat_name = 'Done'
+    AND issue_status <> 'Rejected'
+    AND issue_type_name IN('Story','Epic')
+	AND field = 'resolutiondate'
+    '''
+    issues_SP_query = f'''
+    SELECT "the_project", "jira_project", "issue_id", "key", "field_value" AS "story_points", "issue_type_name", "issue_status"
+    FROM issues
+    WHERE issue_status_cat_name = 'Done'
+    AND issue_status <> 'Rejected'
+    AND issue_type_name = 'Story'
+    AND field = '{SP_field}'
+    '''
+
+    issues_df = pd.read_sql_query(issues_query, conn)
+    issues_SP_df = pd.read_sql_query(issues_SP_query, conn)
+
+    conn.close()
+
+    issues_df['resolution_date'] = pd.to_datetime(issues_df['resolution_date'], errors='coerce', utc=True)
+    # left join to add Story Points to issues_df
+    issues_df = issues_df.merge(issues_SP_df[['issue_id', 'story_points']], on='issue_id', how='left')
+
+    # Filter issues_df to include only the latest full 12 months
+    today = pd.Timestamp.today(tz='UTC')
+    start_date = (today - pd.DateOffset(months=12)).replace(day=1)
+    end_date = today.replace(day=1) - pd.DateOffset(days=1)
+    issues_df = issues_df[(issues_df['resolution_date'] >= start_date) & (issues_df['resolution_date'] <= end_date)]
+
+    return issues_df
