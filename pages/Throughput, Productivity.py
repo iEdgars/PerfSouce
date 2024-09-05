@@ -1,8 +1,4 @@
 import streamlit as st
-import pandas as pd
-# import altair as alt
-# from datetime import datetime, timedelta
-# import sqlite3
 
 # custom project scripts
 import vizDataJira

@@ -485,31 +485,28 @@ def plot_release_metrics(issues_df, chart_type):
     # Extract month and year from resolution_date
     issues_df['month_year'] = issues_df['resolution_date'].dt.to_period('M')
 
-    theTitle = '# of {} released per Month'
-
     if chart_type == 'story_points':
-        # Ensuring story_points is numeric
+        # Ensure story_points is numeric
         issues_df['story_points'] = pd.to_numeric(issues_df['story_points'], errors='coerce')
-        
+
         # Group by month_year and sum the story points
         metrics_df = issues_df[issues_df['issue_type_name'] == 'Story'].groupby('month_year').agg({'story_points': 'sum'}).reset_index()
         metrics_df['month_year'] = metrics_df['month_year'].dt.to_timestamp()
-        # title = '# of Story Points released per Month'
-        title = theTitle.format('Story Points')
+        title = 'Monthly Stories Delivered by Sum of Story Points'
         y_axis = 'story_points:Q'
         y_title = 'Sum of Story Points'
     elif chart_type == 'num_stories':
         # Group by month_year and count the number of stories
         metrics_df = issues_df[issues_df['issue_type_name'] == 'Story'].groupby('month_year').agg({'issue_id': 'count'}).reset_index()
         metrics_df['month_year'] = metrics_df['month_year'].dt.to_timestamp()
-        title = theTitle.format('Stories')
+        title = 'Monthly Stories Delivered by Number of Stories'
         y_axis = 'issue_id:Q'
         y_title = 'Number of Stories'
     elif chart_type == 'num_epics':
         # Group by month_year and count the number of epics
         metrics_df = issues_df[issues_df['issue_type_name'] == 'Epic'].groupby('month_year').agg({'issue_id': 'count'}).reset_index()
         metrics_df['month_year'] = metrics_df['month_year'].dt.to_timestamp()
-        title = theTitle.format('Epics')
+        title = 'Monthly Epics Delivered by Number of Epics'
         y_axis = 'issue_id:Q'
         y_title = 'Number of Epics'
     else:
@@ -533,8 +530,51 @@ def plot_release_metrics(issues_df, chart_type):
     # Combine the bar chart and the trendline
     chart = (bars + trendline).properties(
         title=title,
-        width=800,
+        # width=800,
         height=400
     )
 
-    return chart
+    return chart, metrics_df, y_axis.split(':')[0]
+
+# Throughput / Productivity release KPI cards
+@st.cache_data(ttl=cacheTime, show_spinner=False)
+def display_release_kpi_cards(metrics_df, y_axis_column, unit):
+    # Calculate statistics
+    average_value = metrics_df[y_axis_column].mean()
+    deviation_value = metrics_df[y_axis_column].std()
+
+    # Calculate trend (slope of the regression line)
+    x = np.arange(len(metrics_df))
+    y = metrics_df[y_axis_column].values
+    y = y.astype(float)
+    slope, intercept = np.polyfit(x, y, 1)
+    trend_per_month = slope
+
+    # CSS for KPI cards
+    card_css = """
+    <style>
+    .card {
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        padding: 10px;
+        margin: 5px;
+        text-align: center;
+    }
+    .card h3 {
+        margin: 0;
+        font-size: 1.2em;
+    }
+    .card h2 {
+        margin: 0;
+        font-size: 2em;
+    }
+    </style>
+    """
+
+    # Display KPI cards
+    st.markdown(card_css, unsafe_allow_html=True)
+
+    col1, col2 = st.columns(2)
+    col1.markdown(f"<div class='card'><h3>Average</h3><h2>{average_value:.1f} {unit}</h2></div>", unsafe_allow_html=True)
+    col2.markdown(f"<div class='card'><h3>Deviation</h3><h2>{deviation_value:.1f} {unit}</h2></div>", unsafe_allow_html=True)
+    st.markdown(f"<div class='card'><h3>Trend</h3><h2>{trend_per_month:.1f} {unit}</h2><h5> per month</h5></div>", unsafe_allow_html=True)
