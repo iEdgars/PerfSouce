@@ -1,8 +1,4 @@
 import streamlit as st
-import pandas as pd
-# import altair as alt
-# from datetime import datetime, timedelta
-# import sqlite3
 
 # custom project scripts
 import vizDataJira
@@ -37,7 +33,7 @@ for mt in ['Lead','Cycle']:
             vizJira.plot_lead_cycle_bar_chart(trans_df, it, mt)
 
         with col2:
-            vizJira.display_kpi_cards(trans_df, it, mt)
+            vizJira.display_lead_cycle_kpi_cards(trans_df, it, mt)
 
         st.divider()
 

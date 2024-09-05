@@ -89,7 +89,7 @@ def plot_lead_cycle_bar_chart(
     st.altair_chart(chart, use_container_width=True)
 
 @st.cache_data(ttl=cacheTime)
-def display_kpi_cards(
+def display_lead_cycle_kpi_cards(
         df,
         issue_type: Literal['Epic','Story'],
         metric_type: Literal['Lead','Cycle']
