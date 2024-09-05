@@ -8,7 +8,7 @@ import st_help
 # Set the page config
 st.set_page_config(
     page_title="Throughput / Productivity",
-    page_icon=":bar_chart:",
+    page_icon="📶",
     layout="wide"
 )
 
